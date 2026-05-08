@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type Fuse from 'fuse.js';
+import type { FuseResultMatch } from 'fuse.js';
 
 interface SearchEntry {
   section: 'knowledge' | 'learn' | 'mock';
@@ -8,6 +9,11 @@ interface SearchEntry {
   title: string;
   url: string;
   text: string;
+}
+
+interface SearchHit {
+  entry: SearchEntry;
+  matches: ReadonlyArray<FuseResultMatch>;
 }
 
 type Loaded = {
@@ -23,10 +29,11 @@ const FUSE_OPTIONS = {
   threshold: 0.3,
   minMatchCharLength: 2,
   ignoreLocation: true,
-  includeScore: false,
+  includeMatches: true,
 };
 
 const MAX_RESULTS = 20;
+const SNIPPET_RADIUS = 60;
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -87,11 +94,16 @@ export default function CommandPalette() {
     setSelected(0);
   }, [query]);
 
-  const results = useMemo<SearchEntry[]>(() => {
+  const results = useMemo<SearchHit[]>(() => {
     if (!loaded) return [];
     const q = query.trim();
-    if (!q) return loaded.entries.slice(0, MAX_RESULTS);
-    return loaded.fuse.search(q, { limit: MAX_RESULTS }).map(r => r.item);
+    if (!q) {
+      return loaded.entries.slice(0, MAX_RESULTS).map(entry => ({ entry, matches: [] }));
+    }
+    return loaded.fuse.search(q, { limit: MAX_RESULTS }).map(r => ({
+      entry: r.item,
+      matches: r.matches ?? [],
+    }));
   }, [loaded, query]);
 
   useEffect(() => {
@@ -116,7 +128,7 @@ export default function CommandPalette() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const r = results[selected];
-      if (r) navigate(r);
+      if (r) navigate(r.entry);
     }
   }
 
@@ -156,36 +168,48 @@ export default function CommandPalette() {
           {loaded && results.length === 0 && (
             <div className="px-4 py-6 text-sm text-zinc-500">No matches.</div>
           )}
-          {loaded && results.map((r, i) => (
-            <button
-              key={`${r.section}-${r.slug}`}
-              type="button"
-              data-idx={i}
-              onMouseEnter={() => setSelected(i)}
-              onClick={() => navigate(r)}
-              className={[
-                'w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm border-l-2',
-                i === selected
-                  ? 'bg-zinc-800/80 border-zinc-300 text-zinc-100'
-                  : 'border-transparent text-zinc-300 hover:bg-zinc-900',
-              ].join(' ')}
-            >
-              <span
+          {loaded && results.map((r, i) => {
+            const { entry, matches } = r;
+            const titleMatch = matches.find(m => m.key === 'title');
+            const textMatch = matches.find(m => m.key === 'text');
+            return (
+              <button
+                key={`${entry.section}-${entry.slug}`}
+                type="button"
+                data-idx={i}
+                onMouseEnter={() => setSelected(i)}
+                onClick={() => navigate(entry)}
                 className={[
-                  'shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide',
-                  r.section === 'knowledge' && 'bg-sky-900/50 text-sky-300',
-                  r.section === 'learn' && 'bg-emerald-900/50 text-emerald-300',
-                  r.section === 'mock' && 'bg-amber-900/50 text-amber-300',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
+                  'w-full flex flex-col gap-1 px-4 py-2.5 text-left text-sm border-l-2',
+                  i === selected
+                    ? 'bg-zinc-800/80 border-zinc-300 text-zinc-100'
+                    : 'border-transparent text-zinc-300 hover:bg-zinc-900',
+                ].join(' ')}
               >
-                {r.sectionLabel}
-              </span>
-              <span className="text-zinc-600 tabular-nums text-xs">{r.slug}</span>
-              <span className="truncate">{r.title}</span>
-            </button>
-          ))}
+                <div className="flex items-center gap-3">
+                  <span
+                    className={[
+                      'shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide',
+                      entry.section === 'knowledge' && 'bg-sky-900/50 text-sky-300',
+                      entry.section === 'learn' && 'bg-emerald-900/50 text-emerald-300',
+                      entry.section === 'mock' && 'bg-amber-900/50 text-amber-300',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {entry.sectionLabel}
+                  </span>
+                  <span className="text-zinc-600 tabular-nums text-xs">{entry.slug}</span>
+                  <span className="truncate">{highlight(entry.title, titleMatch)}</span>
+                </div>
+                {textMatch && (
+                  <div className="pl-1 text-xs text-zinc-500 line-clamp-2 leading-snug">
+                    {snippet(entry.text, textMatch)}
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-zinc-800 px-4 py-2 text-[11px] text-zinc-500">
@@ -198,4 +222,60 @@ export default function CommandPalette() {
       </div>
     </div>
   );
+}
+
+function highlight(value: string, match: FuseResultMatch | undefined): ReactNode {
+  if (!match || !match.indices?.length) return value;
+  return renderRanges(value, match.indices, 0, value.length);
+}
+
+function snippet(value: string, match: FuseResultMatch): ReactNode {
+  const indices = match.indices ?? [];
+  if (!indices.length) return value.slice(0, SNIPPET_RADIUS * 2);
+  let best = indices[0];
+  for (const range of indices) {
+    if (range[1] - range[0] > best[1] - best[0]) best = range;
+  }
+  const center = Math.floor((best[0] + best[1]) / 2);
+  const start = Math.max(0, center - SNIPPET_RADIUS);
+  const end = Math.min(value.length, start + SNIPPET_RADIUS * 2);
+  const prefix = start > 0 ? '...' : '';
+  const suffix = end < value.length ? '...' : '';
+  return (
+    <>
+      {prefix}
+      {renderRanges(value, indices, start, end)}
+      {suffix}
+    </>
+  );
+}
+
+function renderRanges(
+  value: string,
+  indices: ReadonlyArray<readonly [number, number]>,
+  windowStart: number,
+  windowEnd: number,
+): ReactNode {
+  const parts: ReactNode[] = [];
+  let cursor = windowStart;
+  for (const [s, e] of indices) {
+    const start = Math.max(s, windowStart);
+    const end = Math.min(e + 1, windowEnd);
+    if (end <= cursor) continue;
+    if (start > cursor) parts.push(value.slice(cursor, start));
+    if (start < end) {
+      parts.push(
+        <mark
+          key={`${start}-${end}`}
+          className="bg-amber-300/30 text-amber-100 rounded-sm px-0.5"
+        >
+          {value.slice(start, end)}
+        </mark>,
+      );
+    }
+    cursor = end;
+    if (cursor >= windowEnd) break;
+  }
+  if (cursor < windowEnd) parts.push(value.slice(cursor, windowEnd));
+  return <>{parts}</>;
 }

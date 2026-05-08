@@ -683,6 +683,8 @@ Each of these has tripped real students. Read them before the exam.
 
 ## 12. Quick Recall Card
 
+> **Priority:** DRILL — last-minute syntax recall.
+
 Last-minute syntax dump. Memorize the shapes.
 
 ```swift

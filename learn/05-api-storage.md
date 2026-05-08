@@ -6,6 +6,8 @@ A tutorial-style walkthrough. Read top to bottom once. The cheat-sheet bullets a
 
 ## 1. Mental model: two halves of "data in an app"
 
+> **Priority:** SKIM — orienting framing, not asked verbatim.
+
 An iOS app deals with data in two fundamentally different places:
 
 ```
@@ -42,6 +44,8 @@ This file teaches the network half first because it forces you to internalize as
 ---
 
 ## 2. async / await primer
+
+> **Priority:** DRILL — async/await rules and `.task {}` are practical staples.
 
 ### 2.1 Why we no longer use completion handlers
 
@@ -103,6 +107,8 @@ struct V: View {
 ---
 
 ## 3. URLSession + URL
+
+> **Priority:** DRILL — `URLSession.shared.data(from:)` is exam fetch idiom.
 
 ### 3.1 Mental model
 
@@ -204,6 +210,8 @@ if let http = resp as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
 ---
 
 ## 4. Codable
+
+> **Priority:** DRILL — auto-synthesis + `CodingKeys` mapping appears every year.
 
 ### 4.1 Why two protocols? (`Decodable` and `Encodable`)
 
@@ -344,6 +352,8 @@ struct Daily: Codable {
 
 ## 5. Wiring API into a View
 
+> **Priority:** DRILL — `.task` + load function is the canonical practical-exam recipe.
+
 The pattern: a `@State` model array, an async `load()` function, and `.task { await load() }` on the view.
 
 ### 5.1 Minimal version
@@ -478,6 +488,8 @@ struct WeatherView: View {
 
 ## 6. @AppStorage
 
+> **Priority:** DRILL — 4-step recipe is exam-favorite practical task.
+
 ### 6.1 What it actually is
 
 `@AppStorage` is a **property wrapper** with two jobs:
@@ -592,6 +604,8 @@ XCTAssertEqual(UserDefaults.standard.string(forKey: "username"), "alice")
 
 ## 7. UserDefaults (raw)
 
+> **Priority:** SKIM — raw API rarely required; @AppStorage covers it.
+
 ### 7.1 What it is
 
 A key/value store backed by a plist file in your app sandbox. Accessed via the singleton `UserDefaults.standard`. AppStorage wraps this. You can use it directly when you don't need SwiftUI re-rendering or you're outside a View.
@@ -622,6 +636,8 @@ UserDefaults.standard.removeObject(forKey: "user")         // delete the entry
 
 ## 8. Other storage briefly
 
+> **Priority:** SKIP — Keychain/SwiftData out of exam scope.
+
 You probably don't need to write code for these on the exam, but knowing the boundaries lets you pick the right tool when asked.
 
 **File-based JSON (FileManager + Codable).** When you want to save a moderately sized list (a hundred to-do items, a downloaded JSON blob) without a real database. Encode your `Codable` model to `Data` with `JSONEncoder`, write to a URL inside `FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)`, read back with `Data(contentsOf:)` and `JSONDecoder.decode`. Heavier than UserDefaults, lighter than a database.
@@ -642,6 +658,8 @@ You probably don't need to write code for these on the exam, but knowing the bou
 
 ## 9. Common pitfalls — and why each trips students up
 
+> **Priority:** DRILL — graders specifically hunt these in code-improvement.
+
 - **Forgetting `: Codable` on the model.** `decode(MyType.self, …)` won't even compile. Compiler error mentions `Decodable` conformance — that's the hint.
 - **Force-unwrapping `URL(string:)!`.** A single typo (or a user-supplied string) crashes the entire app on launch. Always `guard let`.
 - **`.onAppear { await load() }`.** `onAppear` takes a synchronous closure, so the compiler rejects `await`. Either use `.task { await load() }` or wrap: `.onAppear { Task { await load() } }`.
@@ -658,6 +676,8 @@ You probably don't need to write code for these on the exam, but knowing the bou
 ---
 
 ## 10. Quick recall card
+
+> **Priority:** DRILL — last-minute syntax recall.
 
 ```swift
 // ----- Network + decode ------------------------------------------------------
