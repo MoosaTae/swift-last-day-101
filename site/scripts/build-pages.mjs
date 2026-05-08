@@ -29,26 +29,16 @@ const TOPIC_LABEL = {
     '05': 'API & Storage',
   },
   mock: {
-    '01': 'M1: Written Paper',
-    '02': 'M1: Written Answers',
-    '03': 'M1: Practical Brief',
-    '04': 'M1: Practical Rubric',
-    '05': 'M2: Written Paper',
-    '06': 'M2: Written Answers',
-    '07': 'M2: Practical Brief',
-    '08': 'M2: Practical Rubric',
-    '09': 'M3: Written Paper',
-    '10': 'M3: Written Answers',
-    '11': 'M3: Practical Brief',
-    '12': 'M3: Practical Rubric',
-    '13': 'M4: Written Paper',
-    '14': 'M4: Written Answers',
-    '15': 'M4: Practical Brief',
-    '16': 'M4: Practical Rubric',
-    '17': 'M5: Written Paper',
-    '18': 'M5: Written Answers',
-    '19': 'M5: Practical Brief',
-    '20': 'M5: Practical Rubric',
+    '01': { title: 'M1: Written Exam', question: '01', answer: '02' },
+    '02': { title: 'M1: Practical Exam', question: '03', answer: '04' },
+    '03': { title: 'M2: Written Exam', question: '05', answer: '06' },
+    '04': { title: 'M2: Practical Exam', question: '07', answer: '08' },
+    '05': { title: 'M3: Written Exam', question: '09', answer: '10' },
+    '06': { title: 'M3: Practical Exam', question: '11', answer: '12' },
+    '07': { title: 'M4: Written Exam', question: '13', answer: '14' },
+    '08': { title: 'M4: Practical Exam', question: '15', answer: '16' },
+    '09': { title: 'M5: Written Exam', question: '17', answer: '18' },
+    '10': { title: 'M5: Practical Exam', question: '19', answer: '20' },
   },
 };
 
@@ -64,20 +54,52 @@ marked.use({
   },
 });
 
-function buildSection(dir, labelMap) {
+function loadMarkdownBySlug(dir) {
   if (!existsSync(dir)) return {};
-  const files = readdirSync(dir)
-    .filter(f => /^(\d{2})-.*\.md$/.test(f))
-    .sort();
-
-  const out = {};
+  const files = readdirSync(dir).filter(f => /^(\d{2})-.*\.md$/.test(f));
+  const bySlug = {};
   for (const f of files) {
     const slug = f.match(/^(\d{2})/)[1];
+    bySlug[slug] = { file: f, text: readFileSync(join(dir, f), 'utf8') };
+  }
+  return bySlug;
+}
+
+function renderMarkdown(text) {
+  return text.trim() ? marked.parse(text) : '<p>(empty)</p>';
+}
+
+function buildPlainSection(dir, labelMap) {
+  const bySlug = loadMarkdownBySlug(dir);
+  const out = {};
+  for (const [slug, { file, text }] of Object.entries(bySlug).sort()) {
     if (!labelMap[slug]) continue;
-    const text = readFileSync(join(dir, f), 'utf8');
-    const html = text.trim() ? marked.parse(text) : '<p>(empty)</p>';
-    out[slug] = { title: labelMap[slug], html };
-    console.log(`  ${f}: ${text.length} bytes`);
+    out[slug] = { title: labelMap[slug], html: renderMarkdown(text) };
+    console.log(`  ${file}: ${text.length} bytes`);
+  }
+  return out;
+}
+
+function buildMockSection(dir, labelMap) {
+  const bySlug = loadMarkdownBySlug(dir);
+  const out = {};
+  for (const [slug, meta] of Object.entries(labelMap).sort()) {
+    const q = bySlug[meta.question];
+    const a = bySlug[meta.answer];
+    if (!q) {
+      console.warn(`  [mock] missing question file for slug ${slug} (expected ${meta.question}-*.md)`);
+      continue;
+    }
+    const questionHtml = renderMarkdown(q.text);
+    const answerHtml = a ? renderMarkdown(a.text) : '<p>(no answer key)</p>';
+    const html =
+      `<section class="mock-question">${questionHtml}</section>` +
+      `<details class="answer-toggle">` +
+      `<summary>Show answer key</summary>` +
+      `<section class="mock-answer card-md">${answerHtml}</section>` +
+      `</details>`;
+    out[slug] = { title: meta.title, html };
+    console.log(`  ${slug}: ${meta.title} (${q.file} + ${a?.file ?? 'no-answer'})`);
   }
   return out;
 }
@@ -86,7 +108,11 @@ function main() {
   const all = {};
   for (const [name, dir] of Object.entries(SECTIONS)) {
     console.log(`[${name}]`);
-    all[name] = buildSection(dir, TOPIC_LABEL[name] ?? {});
+    if (name === 'mock') {
+      all[name] = buildMockSection(dir, TOPIC_LABEL[name] ?? {});
+    } else {
+      all[name] = buildPlainSection(dir, TOPIC_LABEL[name] ?? {});
+    }
   }
   mkdirSync(dirname(OUT_FILE), { recursive: true });
   writeFileSync(OUT_FILE, JSON.stringify(all, null, 2));

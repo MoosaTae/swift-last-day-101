@@ -59,6 +59,16 @@ Package manager is **pnpm** (lockfile: `pnpm-lock.yaml`). Don't run `npm install
 - All three content routes use the same one-liner shape: `getStaticPaths()` reads `pages.json[<section>]`, then the body is `<article class="card-md" set:html={page.html}></article>`. There is no runtime markdown parsing — `marked` and `highlight.js` only run during the Node prebuild.
 - The sidebar (`src/layouts/Sidebar.astro`) is the global shell; pages opt in by wrapping their body in `<Sidebar title=… active=…>`. It also mounts `<CommandPalette client:load />` so Cmd/Ctrl+K opens a Fuse.js fuzzy search across all knowledge/learn/mock pages on every route. The palette lazy-loads Fuse + `/search-index.json` on first open.
 
+### `/a` — ask local Claude from the palette
+
+The Cmd+K palette doubles as a Claude Code prompt: type `/a <question>` and Enter to dispatch to the local `claude` CLI. The streaming reply (markdown + tool-use cards) renders inside the palette; follow-up `/a` re-uses the same `session_id`. Implementation:
+
+- Bridge: `site/scripts/ask-bridge.mjs` is a Vite plugin (`apply: 'serve'`) that adds a dev-only `POST /api/ask` SSE endpoint on the same port as `astro dev`. It spawns `claude -p --output-format stream-json --verbose --include-partial-messages --permission-mode bypassPermissions` with `cwd` = repo root and pipes NDJSON to the browser as `data:` frames.
+- UI: `site/src/components/AskPanel.tsx` parses the stream (`stream_event` text deltas → live markdown; `assistant` tool_use blocks → collapsible cards; `user` tool_result → attached; `result` → cost/duration). Stop button aborts the fetch which kills the child via `req.on('close')`.
+- **Dev-only by design.** `apply: 'serve'` keeps the endpoint out of `pnpm build`. In `pnpm preview` `/a` will fail to fetch — that's expected.
+- **Dangerous by design.** `bypassPermissions` lets Claude run any Bash, edit any file under repo root with no prompt. Loopback-only (Vite default), single-user machine. Don't expose the dev server externally.
+- Override the binary via `ASK_CLAUDE_BIN=/path/to/claude pnpm dev` if you need a different `claude` (e.g. testing a beta).
+
 ## Authoring content
 
 ### Flashcards (`exercise/exercises-NN-*.md`)
