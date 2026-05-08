@@ -9,6 +9,8 @@ more code - you need a mental model that lets you derive the code on the spot.
 
 ## 1. Mental model: how SwiftUI decides where things go
 
+> **Priority:** DRILL — parent-proposes/child-decides rule unlocks every layout question.
+
 ### The single rule that explains everything
 
 > Parent proposes a size. Child decides its own size. Parent positions the child.
@@ -50,6 +52,8 @@ When you stare at a wireframe, walk this loop:
 ---
 
 ## 2. The container family
+
+> **Priority:** DRILL — VStack/HStack/ZStack/Spacer are the wireframe vocabulary.
 
 Containers are the verbs of SwiftUI. Each expresses one geometric idea.
 
@@ -172,6 +176,8 @@ remove gaps.
 ---
 
 ## 3. Modifiers - what they really are
+
+> **Priority:** DRILL — modifier order semantics are a recurring exam trap.
 
 A modifier is a function on `View` that returns a NEW view wrapping the
 original. It does not mutate. Reading
@@ -324,6 +330,8 @@ Circle().stroke(Color.red, lineWidth: 2)
 
 ## 4. Frame deep-dive
 
+> **Priority:** DRILL — rigid/greedy/flexible frame variants asked verbatim.
+
 Three variants, three different geometric statements.
 
 ### 4.1 `.frame(width:height:)` - rigid box
@@ -412,6 +420,8 @@ Default alignment is `.center`.
 
 ## 5. Alignment - four places it shows up, all subtly different
 
+> **Priority:** DRILL — stack/frame/multilineText alignment confused often.
+
 ### 5.1 `VStack(alignment:)` - horizontal alignment of children
 
 ```
@@ -468,6 +478,8 @@ Text("Hi")
 ---
 
 ## 6. View decomposition walkthrough
+
+> **Priority:** DRILL — wireframe-to-SwiftUI is a graded written category.
 
 ### The recipe (memorise the steps, not the code)
 
@@ -723,6 +735,8 @@ equally. Without it, both cards would shrink to text width and clump centre.
 
 ## 7. Common pitfalls (graders look for these)
 
+> **Priority:** DRILL — section name says it: graders look for these.
+
 ### 7.1 Forgot `.resizable()` on an asset Image
 
 ```swift
@@ -840,6 +854,8 @@ ORDER: padding (inner), frame, background, cornerRadius, padding (outer).
 ---
 
 ## 8. Quick recall card (last-minute review)
+
+> **Priority:** DRILL — last-minute review, run through tonight.
 
 Stacks and Spacer:
 

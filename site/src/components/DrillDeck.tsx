@@ -19,6 +19,7 @@ interface Progress {
 
 const STORAGE_KEY = 'drill-progress-v1';
 const FILTER_KEY = 'drill-filters-v1';
+const DECK_KEY = 'drill-deck-v1';
 const TOPICS = ['01', '02', '03', '04', '05', '06', '07', '08'] as const;
 const TOPIC_SHORT: Record<string, string> = {
   '01': 'Swift',
@@ -48,17 +49,59 @@ export default function DrillDeck({ cards }: { cards: Card[] }) {
   const [revealed, setRevealed] = useState(false);
   const hydrated = useRef(false);
 
-  // Hydrate from localStorage once on mount.
+  // Hydrate from localStorage once on mount. Restores filters, progress, and
+  // the deck snapshot (order + position + revealed) so a refresh resumes mid-deck.
   useEffect(() => {
+    let activeFilters = new Set<string>(TOPICS);
     try {
       const p = localStorage.getItem(STORAGE_KEY);
       if (p) setProgress(JSON.parse(p));
+
       const f = localStorage.getItem(FILTER_KEY);
       if (f) {
         const arr = JSON.parse(f) as string[];
-        if (Array.isArray(arr) && arr.length) setFilters(new Set(arr));
+        if (Array.isArray(arr) && arr.length) {
+          activeFilters = new Set(arr);
+          setFilters(activeFilters);
+        }
       }
-    } catch {}
+
+      const activeFiltered = cards.filter(c => activeFilters.has(c.topic));
+      const d = localStorage.getItem(DECK_KEY);
+      const snapshot = d ? (JSON.parse(d) as { orderIds?: string[]; currentId?: string; revealed?: boolean }) : null;
+
+      if (snapshot && Array.isArray(snapshot.orderIds)) {
+        const idToIdx = new Map(activeFiltered.map((c, i) => [c.id, i] as const));
+        const seen = new Set<number>();
+        const ord: number[] = [];
+        for (const id of snapshot.orderIds) {
+          const idx = idToIdx.get(id);
+          if (idx !== undefined && !seen.has(idx)) {
+            ord.push(idx);
+            seen.add(idx);
+          }
+        }
+        for (let i = 0; i < activeFiltered.length; i++) {
+          if (!seen.has(i)) ord.push(i);
+        }
+        setOrder(ord);
+
+        let p = 0;
+        if (snapshot.currentId) {
+          const cardIdx = activeFiltered.findIndex(c => c.id === snapshot.currentId);
+          if (cardIdx !== -1) {
+            const orderPos = ord.findIndex(i => i === cardIdx);
+            if (orderPos !== -1) p = orderPos;
+          }
+        }
+        setPos(p);
+        setRevealed(!!snapshot.revealed);
+      } else {
+        setOrder(activeFiltered.map((_, i) => i));
+      }
+    } catch {
+      setOrder(cards.filter(c => activeFilters.has(c.topic)).map((_, i) => i));
+    }
     hydrated.current = true;
   }, []);
 
@@ -83,16 +126,19 @@ export default function DrillDeck({ cards }: { cards: Card[] }) {
     [cards, filters],
   );
 
-  // Rebuild order whenever the filtered set changes.
-  useEffect(() => {
-    setOrder(filtered.map((_, i) => i));
-    setPos(0);
-    setRevealed(false);
-  }, [filtered]);
-
   const safePos = filtered.length === 0 ? 0 : pos % filtered.length;
   const currentIdx = order.length > 0 ? order[safePos] ?? 0 : safePos;
   const current = filtered.length > 0 ? filtered[currentIdx] : null;
+
+  // Persist the deck snapshot (order, current card, revealed) so a refresh resumes mid-deck.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      const orderIds = order.map(i => filtered[i]?.id).filter((x): x is string => Boolean(x));
+      const payload = { orderIds, currentId: current?.id ?? '', revealed };
+      localStorage.setItem(DECK_KEY, JSON.stringify(payload));
+    } catch {}
+  }, [order, pos, revealed, filtered, current]);
 
   const counts = useMemo(() => {
     let got = 0;
@@ -125,17 +171,24 @@ export default function DrillDeck({ cards }: { cards: Card[] }) {
     setProgress(p => ({ ...p, [current.id]: v }));
     next();
   }
+  function resetDeckFor(nextFilters: Set<string>) {
+    const fresh = cards.filter(c => nextFilters.has(c.topic));
+    setOrder(fresh.map((_, i) => i));
+    setPos(0);
+    setRevealed(false);
+  }
   function toggleFilter(topic: string) {
-    setFilters(prev => {
-      const next = new Set(prev);
-      if (next.has(topic)) next.delete(topic);
-      else next.add(topic);
-      if (next.size === 0) return new Set(TOPICS);
-      return next;
-    });
+    const draft = new Set(filters);
+    if (draft.has(topic)) draft.delete(topic);
+    else draft.add(topic);
+    const next = draft.size === 0 ? new Set<string>(TOPICS) : draft;
+    setFilters(next);
+    resetDeckFor(next);
   }
   function setAll() {
-    setFilters(new Set(TOPICS));
+    const next = new Set<string>(TOPICS);
+    setFilters(next);
+    resetDeckFor(next);
   }
 
   // Keyboard shortcuts.

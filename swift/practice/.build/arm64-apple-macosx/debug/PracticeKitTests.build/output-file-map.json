@@ -1,0 +1,19 @@
+{
+  "": {
+    "swift-dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/master.swiftdeps"
+  },
+  "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/ItemStoreTests.swift": {
+    "dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.d",
+    "object": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.swift.o",
+    "swiftmodule": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.swiftdeps",
+    "diagnostics": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.dia"
+  },
+  "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/RemoteFetcherTests.swift": {
+    "dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.d",
+    "object": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.swift.o",
+    "swiftmodule": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.swiftdeps",
+    "diagnostics": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.dia"
+  }
+}

@@ -1,5 +1,7 @@
 # Topic 4 — Lists & Navigation: Practice
 
+> **React framing:** `List` ≈ a styled `<ul>` rendered from `items.map(...)`. `ForEach` ≈ the `.map(...)` itself. `Identifiable` ≈ React's `key` prop — every row needs a stable id or you get diffing warnings. `NavigationStack` + `NavigationLink` ≈ Next.js Pages router + `<Link href>`, with a back button + push/pop animation provided. `.navigationDestination(for: T.self)` ≈ a route definition: "when something pushes a `T`, render this view."
+
 ## Section A — Output/Behavior Prediction (8 problems)
 
 ### A1. List of `[String]` without `id:`
@@ -19,6 +21,7 @@ struct ContentView: View {
 
 Compile error: `Initializer 'init(_:rowContent:)' requires that 'String' conform to 'Identifiable'`. `String` is not `Identifiable`, so `List(items)` cannot infer an id. Fix: `List(fruits, id: \.self)`.
 
+> **React:** equivalent of mapping without a `key` prop, but stricter — Swift compile-errors instead of just warning at runtime.
 </details>
 
 ---
@@ -40,6 +43,7 @@ struct ContentView: View {
 
 Compiles and renders three rows: "Apple", "Banana", "Cherry". `String` is `Hashable`, so each value is its own id. Works fine as long as values are unique.
 
+> **React:** like `fruits.map(f => <li key={f}>{f}</li>)` — using the value itself as the key. Same caveat: only safe when values are unique.
 </details>
 
 ---
@@ -66,6 +70,7 @@ struct ContentView: View {
 
 Renders three rows: "Ann", "Ben", "Cy". Because `Person` is `Identifiable`, no `id:` parameter is needed; `List` uses `\.id` automatically.
 
+> **React:** equivalent of `people.map(p => <li key={p.id}>{p.name}</li>)`. `Identifiable` formalizes "this type has a stable id" the way TS interfaces formalize shapes.
 </details>
 
 ---
@@ -104,6 +109,7 @@ struct ContentView: View {
 
 A vertical scroll view with two rows. Each row has a bold title on top and a smaller subtitle below, left-aligned, with 12pt vertical spacing between rows. Unlike `List`, there are no separators, no row chrome, and rows are eagerly built (use `LazyVStack` if you need lazy loading).
 
+> **React:** `ScrollView + VStack + ForEach` ≈ `<div className="overflow-y-auto"><div className="flex flex-col gap-3">{items.map(...)}</div></div>`. `List` is the chrome'd version (think iOS-styled `<ul>`); `ScrollView+VStack` is the bare version.
 </details>
 
 ---
@@ -129,6 +135,7 @@ struct ContentView: View {
 
 Renders a list with a single tappable row "Show Detail" and a navigation bar titled "Home". Tapping the row pushes a new screen onto the stack that displays "Detail Screen" in a large font, with a back button labeled "Home" in the top-left.
 
+> **React/Next:** `<Link href="/detail">Show Detail</Link>` plus a `Detail` page — but SwiftUI gives you the back button + animated push for free.
 </details>
 
 ---
@@ -160,6 +167,7 @@ struct ContentView: View {
 
 Renders a list of two rows, "Thailand" and "Japan". Tapping a row pushes a detail screen showing "Welcome to Thailand" or "Welcome to Japan". The value-based link sends a `Country` value into the stack; the `.navigationDestination(for: Country.self)` registered on the root resolves it.
 
+> **React/Next:** like a typed dynamic route — `NavigationLink(value: c)` ≈ `<Link href={\`/country/${c.name}\`}>` and `.navigationDestination(for: Country.self)` ≈ the `[name].tsx` page that knows how to render a Country. SwiftUI passes the value object directly instead of serializing through a URL.
 </details>
 
 ---
@@ -181,6 +189,7 @@ struct ContentView: View {
 
 Compiles and runs, but at runtime SwiftUI logs a warning: "ID `apple` occurs multiple times within a collection, this will give undefined results!". Visually you may see only two rows, animations may be wrong, and tapping/diffing behavior is undefined. Fix: use a struct wrapping `id: UUID()` or `Array.indices` with `id: \.self`.
 
+> **React:** identical "Each child in a list should have a unique key prop" warning when two children share a key. Same fix: stable unique id, or fall back to index.
 </details>
 
 ---
@@ -205,6 +214,7 @@ struct ContentView: View {
 
 The navigation bar shows no title (it appears empty). `.navigationTitle` must be applied to a view *inside* the `NavigationStack`, not on the `NavigationStack` itself. The modifier here attaches to the stack's container, which has no nav-bar context to write to. Fix: move `.navigationTitle("Outside")` onto the `List`.
 
+> **React:** SwiftUI-specific — no clean React analog. Closest mental model: `<Head>` from Next.js must live inside the page component, not above the `<App>`.
 </details>
 
 ---
@@ -240,6 +250,7 @@ Reasons:
 - `String` is not `Identifiable`; `List` needs an id source. `id: \.self` works because `String` is `Hashable`.
 - Lift the literal array out of `body` into a stored property so `body` is not constructing a new array on every redraw.
 
+> **React:** same lesson — define data outside the JSX-returning function, otherwise every render creates a new array reference (breaks memoization).
 </details>
 
 ---
@@ -322,6 +333,7 @@ Reasons:
 - The row becomes reusable elsewhere (search results, favorites screen, etc.).
 - `body` of the list view stays scannable.
 
+> **React:** identical refactor — pull the inline JSX into `<BookRow book={book} />`. Same readability + reusability win.
 </details>
 
 ---
@@ -364,7 +376,6 @@ struct ContentView: View {
 Reasons:
 - When the element type is `Identifiable`, `ForEach(items)` already uses `\.id`. Specifying `id: \.id` is noise.
 - Removing it makes intent clearer: this is a normal `Identifiable`-driven loop.
-
 </details>
 
 ---
@@ -421,6 +432,7 @@ Reasons:
 - Only the **root** of a navigation flow needs a `NavigationStack`. Nested stacks create multiple back-stacks, broken titles, and double nav bars.
 - Pushed/destination views are plain `View`s; the existing stack handles their nav bar.
 
+> **React/Next:** like wrapping every page in its own `<Router>` — the routing tree is global, child pages don't redeclare it.
 </details>
 
 ---
@@ -469,6 +481,7 @@ Reasons:
 - A `NavigationLink` is itself a tappable view; constructing one inside a button's action does nothing. The action runs but there is no link in the hierarchy to push.
 - For programmatic pushes, drive `.navigationDestination(isPresented:)` (or a `NavigationPath`) from the button's action.
 
+> **React/Next:** like trying to render `<Link>` inside `onClick`. The fix mirrors React: either render the link declaratively, or imperatively call `router.push()` from the click handler — `.navigationDestination(isPresented:)` is SwiftUI's `router.push`.
 </details>
 
 ---
@@ -530,6 +543,7 @@ Reasons:
 - A detail view should depend only on what it displays. Passing the whole list and an index couples it to the list's storage.
 - Value-based navigation (`NavigationLink(value:)` + `.navigationDestination(for:)`) is the modern, type-safe form.
 
+> **React:** classic prop-narrowing rule — `<BookDetail book={book} />` not `<BookDetail books={all} selectedIndex={i} />`. Component should depend only on what it renders.
 </details>
 
 ---
@@ -574,6 +588,7 @@ Reasons:
 - Adding `let id = UUID()` is the cheapest way to get a stable identity.
 - Alternative: `List(movies, id: \.title)` if titles are guaranteed unique.
 
+> **React:** the equivalent of "forgot the `key` prop" — but Swift turns it into a compile error.
 </details>
 
 ---
@@ -604,6 +619,7 @@ Reasons:
 - `struct` plays nicely with SwiftUI diffing; class identity vs value identity can confuse `List`/`ForEach` updates.
 - You also get `Hashable` synthesized for free, which `.navigationDestination(for:)` needs.
 
+> **React:** in JS we don't have struct/class for data — but we use plain objects (value-ish) for data and reserve `class` for stateful machines. Same instinct.
 </details>
 
 ---
@@ -633,6 +649,7 @@ Reasons:
 - `body` is recomputed on every state change; an inline literal allocates a new array each call.
 - Stored properties make the data testable, previewable, and injectable from a parent view.
 
+> **React:** equivalent to defining `const letters = [...]` inside the component function — every render gets a new array reference, breaking `useMemo` and child memoization. Lift it out (or wrap in `useMemo`).
 </details>
 
 ---
@@ -670,7 +687,6 @@ struct Book: Identifiable, Hashable {
 Reasons:
 - `NavigationLink(value:)` requires the value to be `Hashable` so the stack can store and compare path elements.
 - `Hashable` is auto-synthesized for structs whose stored properties are all `Hashable` (`UUID` and `String` are), so just declaring conformance is enough.
-
 </details>
 
 ---
@@ -984,6 +1000,7 @@ struct ContentView: View {
 }
 ```
 
+> **React/Next:** structurally identical to a `pages/index.tsx` that maps `<Link href={\`/books/${id}\`}>` and a `pages/books/[id].tsx` that renders the detail. Swift bundles both into one file via the `for: Book.self` destination.
 </details>
 
 ---
@@ -1080,6 +1097,7 @@ struct ContentView: View {
 }
 ```
 
+> **React:** identical refactor — extract `<BookRow book={book} />`. Same readability/reusability win.
 </details>
 
 ---
@@ -1125,7 +1143,6 @@ struct Book: Identifiable, Hashable {
 Reasons:
 - All stored properties (`UUID`, `String`) are `Hashable`, so Swift synthesizes `Hashable` for free as soon as you declare the conformance.
 - `NavigationLink(value:)` and `NavigationPath` both require `Hashable` so values can be stored in the navigation path.
-
 </details>
 
 ---
@@ -1199,6 +1216,7 @@ Notes:
 - Both destinations are attached to the root `List`, not inside `ItemList`. Registering them on a pushed child will silently fail.
 - `Category` is `Hashable` (synthesized), and `String` is already `Hashable`.
 
+> **React/Next:** `pages/categories/index.tsx` -> `pages/categories/[name]/index.tsx` -> `pages/categories/[name]/[item].tsx`. SwiftUI declares all three destinations on the root view in one place.
 </details>
 
 ---
@@ -1247,4 +1265,106 @@ NavigationView {
 // Still works on older iOS but exam answers should prefer NavigationStack.
 ```
 
+> **React:** `cities.map(c => <li key={c}>{c}</li>)` — using the value as key. Same risk: duplicates break diffing.
 </details>
+
+---
+
+## Section E — View Decomposition (row + parent extraction)
+
+### E1. Contacts list with row decomposition
+
+```
++------------------------------------------------+
+| Contacts                                       |
++------------------------------------------------+
+| [O]  Alice Brown                            >  |
+|      +66 81 234 5678                           |
++------------------------------------------------+
+| [O]  Charlie Davis                          >  |
+|      charlie@example.com                       |
++------------------------------------------------+
+| [O]  Eva Fox                                >  |
+|      +66 88 777 1212                           |
++------------------------------------------------+
+
+[O] = circular avatar, name is bold, subtitle is gray,
+      `>` is the trailing chevron, tapping pushes detail.
+```
+
+Your task: split this screen into three pieces.
+
+1. A `Contact: Identifiable` model with `name` and `subtitle` (phone or email).
+2. A `struct ContactRow: View` that takes a single `Contact` and renders one row: avatar on the left (`Image(systemName: "person.circle.fill")`), name + subtitle stacked vertically in the middle (name `.headline`, subtitle `.secondary`), trailing chevron.
+3. A `struct ContactsList: View` that wraps a `NavigationStack` + `List` of contacts, each row a `NavigationLink` that pushes a placeholder `ContactDetail` view.
+
+<details><summary>Reference solution</summary>
+
+```swift
+struct Contact: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let subtitle: String
+}
+
+struct ContactRow: View {
+    let contact: Contact
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "person.circle.fill")
+                .resizable()
+                .frame(width: 44, height: 44)
+                .foregroundStyle(.blue)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(contact.name).font(.headline)
+                Text(contact.subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct ContactDetail: View {
+    let contact: Contact
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(contact.name).font(.largeTitle).bold()
+            Text(contact.subtitle).foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding()
+        .navigationTitle(contact.name)
+    }
+}
+
+struct ContactsList: View {
+    let contacts = [
+        Contact(name: "Alice Brown",   subtitle: "+66 81 234 5678"),
+        Contact(name: "Charlie Davis", subtitle: "charlie@example.com"),
+        Contact(name: "Eva Fox",       subtitle: "+66 88 777 1212")
+    ]
+
+    var body: some View {
+        NavigationStack {
+            List(contacts) { contact in
+                NavigationLink(value: contact) {
+                    ContactRow(contact: contact)
+                }
+            }
+            .navigationDestination(for: Contact.self) { ContactDetail(contact: $0) }
+            .navigationTitle("Contacts")
+        }
+    }
+}
+```
+
+Notes: the trailing `>` chevron is drawn automatically by `NavigationLink` inside a `List`, so the manual `Image(systemName: "chevron.right")` in `ContactRow` is technically redundant — keep it only if you want the row to look the same outside a `NavigationLink` context (e.g., previews, search results). `Contact` is `Hashable` so `NavigationLink(value:)` + `.navigationDestination(for:)` compile.
+
+> **React/Next:** `<ContactRow contact={c} />` inside `contacts.map(...)` plus a `pages/contacts/[id].tsx` for the detail. SwiftUI's value-based navigation collapses the routing table into one `.navigationDestination(for: Contact.self)` modifier.
+</details>
+

@@ -2,6 +2,8 @@
 
 A practice pack of wireframes to decompose into SwiftUI views using only `VStack`, `HStack`, `Text`, `Image`, and `Spacer`. Modifiers like `.font`, `.foregroundColor`, `.fontWeight`, and `.padding` are fair game — keep them minimal.
 
+> **React framing:** view decomposition is **identical to React component decomposition**. Translation: `VStack` = `<div className="flex flex-col">`, `HStack` = `<div className="flex flex-row">`, `Spacer()` = a `<div className="flex-1"/>` filler (or `ml-auto`), `.frame(maxWidth: .infinity)` = `flex-1`. The skill — looking at a wireframe and identifying which axis the top level is on — is the same one you already use for JSX.
+
 ## Section A — View Decomposition
 
 ### Q1
@@ -41,6 +43,8 @@ struct InboxSummaryView: View {
 ```
 
 Why: outer VStack — three lines stacked top-to-bottom with no horizontal siblings, so a single VStack is enough. `.leading` keeps all three flush to the left edge.
+
+> **React:** `<div className="flex flex-col items-start gap-1">` with three children — same shape.
 </details>
 
 ### Q2
@@ -83,6 +87,8 @@ struct ProfileCardView: View {
 ```
 
 Why: outer HStack — image and text column sit side by side at the top level; the text column is itself a nested VStack. Trailing `Spacer()` pushes content to the leading edge.
+
+> **React:** `<div className="flex flex-row gap-3"><img/><div className="flex flex-col"><h3/><p/></div><div className="flex-1"/></div>`.
 </details>
 
 ### Q3
@@ -121,6 +127,8 @@ struct SettingsRowView: View {
 ```
 
 Why: outer HStack — everything is on a single row. The `Spacer()` between the label and the value pushes the value + chevron to the trailing edge while keeping icon + label on the leading edge.
+
+> **React:** the classic settings-row shape — `<div className="flex items-center gap-3"><Icon/><span>Notifications</span><div className="flex-1"/><span>On</span><ChevronRight/></div>`.
 </details>
 
 ### Q4
@@ -220,6 +228,8 @@ struct StatGridView: View {
 ```
 
 Why: outer VStack — the grid is two rows stacked vertically; each row is an HStack of two cells. `.frame(maxWidth: .infinity)` on each cell makes them split the row equally — the closed-book trick for "equal columns" without `Grid` or `LazyVGrid`.
+
+> **React:** `<div className="grid grid-cols-2 gap-4">` with four cells — or two `<div className="flex gap-4">` rows of `flex-1` cells. SwiftUI's no-Grid trick is exactly the `flex-1` pattern.
 </details>
 
 ### Q6
@@ -279,6 +289,8 @@ struct TweetView: View {
 ```
 
 Why: outer HStack with `alignment: .top` — the avatar sits to the left of the text column, and `.top` keeps the avatar lined up with the first line of the header instead of floating to the vertical center.
+
+> **React:** `<div className="flex flex-row items-start gap-2">` (note `items-start` ≈ `.top` alignment) wrapping `<img/>` and a `<div className="flex flex-col">`.
 </details>
 
 ### Q7
@@ -387,6 +399,8 @@ struct ReceiptView: View {
 ```
 
 Why: outer VStack — each line of the receipt is a row, and rows stack vertically. Inside each row, an HStack with a `Spacer()` between label and price gives the classic "left label, right value" alignment.
+
+> **React:** rows mapped from data + `flex justify-between` on each — `items.map(it => <div className="flex justify-between"><span>{it.name}</span><span>{it.price}</span></div>)`.
 </details>
 
 ### Q9
@@ -479,6 +493,8 @@ struct TabBarView: View {
 ```
 
 Why: outer HStack — four siblings in a row. Each tab is a small VStack (icon over label). `.frame(maxWidth: .infinity)` on each tab is the closed-book trick for equal-width columns.
+
+> **React:** `<div className="flex">` with four `<div className="flex-1 flex flex-col items-center">` children — exact pattern.
 </details>
 
 ### Q11

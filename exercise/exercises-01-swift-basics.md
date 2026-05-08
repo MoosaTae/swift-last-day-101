@@ -24,6 +24,8 @@ hi
 ```
 
 Why: printing an Optional directly shows the wrapper; `??` unwraps to the underlying value.
+
+> **React/TS:** `string | undefined` prints as `"hi"` or `undefined` — JS has no `Optional()` wrapper. `??` works the same.
 </details>
 
 ### Q2
@@ -44,6 +46,8 @@ nil
 ```
 
 Why: dictionary subscript returns `V?`, so a hit prints `Optional(1)`, a miss prints `nil`, and `??` unwraps the hit.
+
+> **React/TS:** `obj["z"]` is `undefined` (not `null`); `Map.get()` returns `T | undefined`. `??` falls back the same way.
 </details>
 
 ### Q3
@@ -63,6 +67,8 @@ print(a.n, b.n)
 ```
 
 Why: `struct` is a value type, so assignment makes an independent copy.
+
+> **React/JS:** no built-in value semantics — `const b = a` aliases. To get a copy: `const b = {...a}`. This is why React state updaters use spread/Immer.
 </details>
 
 ### Q4
@@ -82,6 +88,8 @@ print(a.n, b.n)
 ```
 
 Why: `class` is a reference type — `a` and `b` point to the same instance, and `let` only freezes the reference, not the properties.
+
+> **React/JS:** this is the default JS behavior — `const b = a` shares the same object; mutating `b.n` mutates `a.n`. Swift's class matches JS object semantics; Swift's struct does not.
 </details>
 
 ### Q5
@@ -100,6 +108,8 @@ f()
 ```
 
 Why: closures capture variables by reference, so `f` reads `x`'s current value at call time, not at creation time.
+
+> **React/JS:** same — `let x = 1; const f = () => console.log(x); x = 99; f();` prints `99`. Stale-closure bugs in `useEffect`/`useCallback` come from this exact mechanic.
 </details>
 
 ### Q6
@@ -117,6 +127,8 @@ print(r)
 ```
 
 Why: odds `[1,3,5]` -> squares `[1,9,25]` -> sum `35`.
+
+> **React/JS:** identical: `nums.filter(n => n%2 === 1).map(n => n*n).reduce((a,b) => a+b, 0)`. `$0` is Swift shorthand for the first argument.
 </details>
 
 ### Q7
@@ -137,6 +149,8 @@ Hi Ben from Cat
 ```
 
 Why: omitted argument falls back to the default value; supplied argument overrides it.
+
+> **React/JS:** same as `function greet(name, sender = "Tae")`. The `_` (no external label) and `from sender:` (different external/internal name) are Swift-only ergonomics.
 </details>
 
 ### Q8
@@ -157,6 +171,8 @@ VISA 250
 ```
 
 Why: pattern matches the `.card` case and binds both associated values.
+
+> **React/TS:** equivalent to a discriminated union — `type Payment = {kind:'cash', v:number} | {kind:'card', brand:string, v:number}` with `switch (p.kind)`. Swift's enum + pattern matching is more ergonomic than tagged unions.
 </details>
 
 ### Q9
@@ -175,6 +191,8 @@ print(a ?? b ?? c ?? 0)
 ```
 
 Why: `??` is right-associative and short-circuits — first non-nil wins, so the chain falls through to `c`.
+
+> **React/JS:** identical — JS `??` chains the same way: `a ?? b ?? c ?? 0` returns `7`.
 </details>
 
 ### Q10
@@ -195,6 +213,8 @@ bad
 ```
 
 Why: `Int("12a")` returns `nil`, so the `else` branch runs — no crash because there is no force-unwrap.
+
+> **React/JS:** `parseInt("12a")` actually returns `12` (parses prefix); `Number("12a")` returns `NaN`. The `if let` is the safe-unwrap pattern; closest JS analog is `const n = Number(raw); if (!Number.isNaN(n)) { ... } else { ... }`.
 </details>
 
 ### Q11
@@ -218,6 +238,8 @@ A
 ```
 
 Why: `50..<80` excludes 80, but `80...100` includes it, so the third case matches.
+
+> **React/JS:** JS `switch` doesn't support range patterns — you'd write an `if/else if` chain. `..<` is half-open (excludes upper); `...` is closed (includes both).
 </details>
 
 ### Q12
@@ -235,6 +257,8 @@ print(out)
 ```
 
 Why: `filter` keeps the two `a*` words in original order, `map` uppercases each; arrays print with brackets and quoted strings.
+
+> **React/JS:** identical: `words.filter(w => w.startsWith("a")).map(w => w.toUpperCase())`.
 </details>
 
 ### Q13
@@ -256,6 +280,8 @@ print(parse("oops"))
 ```
 
 Why: `guard let` exits early when conversion fails; on success, `n` stays in scope below the guard.
+
+> **React/JS:** the early-return pattern: `const n = Number(s); if (Number.isNaN(n)) return -1; return n * 2;`. `guard let` keeps the unwrapped name in scope after the guard, which JS achieves naturally with const.
 </details>
 
 ### Q14
@@ -274,6 +300,8 @@ Tae-21
 ```
 
 Why: both conditional casts succeed, both bindings produce values, and string interpolation joins them with the literal dash.
+
+> **React/TS:** like narrowing `Record<string, unknown>` with type guards — `if (typeof user.name === "string" && typeof user.age === "number")`. `as?` is a runtime-checked cast; TS `as` is compile-time only.
 </details>
 
 ### Q15
@@ -293,6 +321,8 @@ print(c.n)
 ```
 
 Why: closures capture reference types by reference, so each call mutates the same `Counter` instance.
+
+> **React/JS:** same — closures over class instances mutate the shared object. This is also why `useRef` works: the `.current` value is shared across renders.
 </details>
 
 ---
@@ -324,6 +354,8 @@ print("port=\(port)")
 - `Int(_:)` returns `Int?`; `!` crashes the app whenever input is not a clean integer.
 - User input is by definition untrusted — never crash on it.
 - `guard let` handles the failure path cleanly; `??` supplies a sane default when one exists.
+
+> **React/TS:** force-unwrap (`!`) is the equivalent of TS non-null assertion `value!` — silent runtime crash if wrong. Prefer `Number(raw)` + `Number.isNaN` check, or `??` with a default.
 </details>
 
 ### B2 — Force unwrap on dictionary access
@@ -347,6 +379,8 @@ print(total)
 - Dictionary subscript returns `V?` — missing keys yield `nil`, and `!` on `nil` crashes.
 - `"mango"` is not in `prices`, so the original line is a guaranteed runtime crash.
 - `??` provides an explicit default and documents the expected fallback.
+
+> **React/JS:** in JS this would silently produce `NaN` (`undefined + undefined`). Same fix: `(prices["apple"] ?? 0) + (prices["mango"] ?? 0)`.
 </details>
 
 ### B3 — `var` that is never mutated
@@ -373,6 +407,8 @@ func areaOfCircle(radius r: Double) -> Double {
 - Neither `pi` nor `area` is reassigned, so both should be `let`.
 - `let` signals immutability to the reader and lets the compiler optimize.
 - It also unlocks safer use in concurrent contexts where mutability would warn.
+
+> **React/JS:** identical to `let` (mutable) → `const` (immutable). Same `prefer-const` ESLint rule.
 </details>
 
 ### B4 — Missing `mutating` on a struct method
@@ -433,6 +469,8 @@ print(origin.x)     // 0  — independent copy
 - A `Point` is a small piece of data with no identity; value semantics fit better.
 - `class` causes aliasing bugs where assignment unexpectedly shares state.
 - `struct` copies on assignment, giving safer, easier-to-reason-about code (and SwiftUI prefers structs).
+
+> **React/JS:** JS only has reference semantics — every "copy" is really an alias unless you spread (`{...origin}`). React's immutability discipline (`setState({...prev, x: 10})`) is the workaround Swift gets for free with structs.
 </details>
 
 ### B6 — Non-exhaustive switch
@@ -465,6 +503,8 @@ func describe(_ d: Direction) -> String {
 - Swift requires `switch` over enums to cover every case (or use `default`).
 - Listing every case makes the compiler your safety net: adding a new case later forces you to update every switch.
 - Avoid `default:` here — it would silently swallow new cases without review.
+
+> **React/TS:** TS gives you exhaustive switching via the `never` trick: `default: const _: never = d;` errors when a new union member is added. Swift enforces it natively.
 </details>
 
 ### B7 — Optional chaining vs force unwrap
@@ -487,6 +527,8 @@ print(upper)
 - `user!` crashes the moment `user` is `nil`, which is exactly the case here.
 - Optional chaining `?.` short-circuits the whole expression to `nil` if any link is missing.
 - Combine with `??` to provide a fallback so the result is a plain `String`, not `String?`.
+
+> **React/JS:** identical syntax — `user?.name?.toUpperCase() ?? "UNKNOWN"`. JS borrowed both `?.` and `??` from Swift/C#.
 </details>
 
 ### B8 — Repeated `if let x = x` should be a single `guard let` chain
@@ -516,6 +558,8 @@ func sendMessage(name: String?, address: String?, body: String?) {
 - The "pyramid of doom" hides the happy path under nesting.
 - A single `guard let` exits early on any `nil` and keeps the success branch flat.
 - Shorthand `let name` (Swift 5.7+) avoids repeating `name = name`.
+
+> **React/JS:** flatten the same way with early returns: `if (!name || !address || !body) return;`. Swift's `guard let` shorthand is what `if (!x) return` looks like with a non-null narrowing baked in.
 </details>
 
 ### B9 — Class used where a struct fits SwiftUI better
@@ -548,6 +592,8 @@ struct TodoItem: Identifiable {
 - SwiftUI compares state by value; `@State` on an array of classes will not detect property-level changes because the reference does not change.
 - Structs give SwiftUI the predictable diffing it relies on for view updates.
 - Adding `Identifiable` with `UUID` plays well with `ForEach` and List rendering.
+
+> **React:** echoes React's "always replace, never mutate state" rule. Mutating an item in place + `setItems(items)` won't re-render because reference is unchanged — same trap.
 </details>
 
 ### B10 — Implicit type inference vs explicit annotation clarity
@@ -572,6 +618,8 @@ let net = price * rate
 - Empty literals (`[]`, `[:]`) need an explicit element type or you get unhelpful inferences like `[Any]`.
 - Currency and rates should be `Double` (or a dedicated type) — leaving them as `Int` invites silent truncation.
 - Explicit annotations document intent and prevent surprising conversions later in the function.
+
+> **React/TS:** same pitfall — `const total = []` is inferred as `never[]`. Annotate: `const total: Order[] = []`.
 </details>
 
 ---
@@ -653,6 +701,8 @@ Why a class fits here:
 - Operations like deposits and withdrawals are expected to mutate a shared instance held by multiple parts of the app (UI, services).
 - Reference semantics avoid the trap of mutating a copy and losing the change.
 - Bonus: as a struct alternative, you would need `mutating` and to hold the value in `var`, but multiple consumers would each see a private copy.
+
+> **React/JS:** JS classes work exactly like Swift's `class` (reference semantics). `class BankAccount { balance = 0; deposit(n) { this.balance += n; } }` — no `mutating` keyword needed because JS objects are always mutable.
 </details>
 
 ### C3 — Refactor a nested if-let pyramid into a single guard-let chain
@@ -686,6 +736,8 @@ Notes:
 - One `guard` covers all unwraps and the `expiry > 0` check via a comma-separated condition list.
 - The happy path is no longer indented, so the function reads top-to-bottom.
 - Shorthand bindings (`let username` instead of `let username = username`) cut noise.
+
+> **React/TS:** equivalent JS pattern — `if (!username || !token || !expiry || expiry <= 0) return "invalid";` then proceed with the unwrapped values.
 </details>
 
 ### C4 — Total revenue from `[Order]` enum array with associated values
@@ -729,6 +781,8 @@ Notes:
 - `reduce(0.0, ...)` seeds a `Double` accumulator so the inferred result type is `Double`.
 - The `switch` is exhaustive because we handle every enum case — adding a new case would force us to update this function.
 - `Double(qty)` is needed because `Int * Double` is not allowed implicitly in Swift.
+
+> **React/TS:** with discriminated unions: `orders.reduce((acc, o) => { switch (o.kind) { case 'product': return acc + o.price * o.qty; ... } }, 0)`. Same shape, more verbose without enum associated values.
 </details>
 
 ### C5 — Complete `WordCounter` returning the most-used word via Dictionary
@@ -786,4 +840,6 @@ Notes:
 - `split(separator:)` returns `[Substring]`; mapping with `String.init` gives plain `String` keys.
 - `max(by:)` on a dictionary returns an optional `(key, value)` tuple; `?.key` extracts the word safely.
 - Returning `String?` lets callers use `??` to provide a fallback — far better than crashing on an empty input.
+
+> **React/JS:** counter idiom: `counts[word] = (counts[word] ?? 0) + 1`. `max(by:)` ≈ `Object.entries(counts).reduce((a,b) => b[1] > a[1] ? b : a)?.[0]`.
 </details>

@@ -6,6 +6,8 @@
 
 ## Mental Model: Views Are Functions of State
 
+> **Priority:** SKIM — useful framing but not asked verbatim.
+
 SwiftUI flips the imperative UI model on its head. You do not "update the label when the button is tapped". You **declare what the UI looks like for any given state**, and SwiftUI re-runs that declaration whenever state changes.
 
 ```
@@ -29,6 +31,8 @@ The whole decision matrix below is essentially: "given who owns this state and w
 ---
 
 ## 1. Decision Matrix — Which Wrapper, When
+
+> **Priority:** DRILL — picking the right wrapper is core practical-exam reflex.
 
 | I want to...                                                  | Use                                  |
 | ------------------------------------------------------------- | ------------------------------------ |
@@ -56,6 +60,8 @@ If a question hands you `ObservableObject`/`@Published`, treat it as the legacy 
 ---
 
 ## 2. `@State` — Local Value-Type State
+
+> **Priority:** DRILL — `@State` rules and `private` convention asked verbatim.
 
 ### Why this exists
 
@@ -115,6 +121,8 @@ struct CounterView: View {
 ---
 
 ## 3. `@Binding` — Pass Write-Access to a Child
+
+> **Priority:** DRILL — `$` prefix and parent->child flow asked every year.
 
 ### Why this exists
 
@@ -199,6 +207,8 @@ struct Numpad: View {
 
 ## 4. `@StateObject` vs `@ObservedObject` (legacy) -> `@State` vs plain `var` (iOS 17+)
 
+> **Priority:** SKIP — legacy detail, `@Observable` covers it cleanly now.
+
 ### Why getting this wrong destroys data
 
 A view struct is recreated on every render. Its properties get re-initialized. If you write `@ObservedObject var store = Store()` (or in modern code, plain `var store = Store()`), then **every re-render builds a fresh `Store`** and your data vanishes the moment a parent re-renders.
@@ -256,6 +266,8 @@ struct Child: View {
 ---
 
 ## 5. `@EnvironmentObject` / `@Environment` — Skip the Prop Drill
+
+> **Priority:** SKIM — environment values appear briefly, not deeply tested.
 
 ### Why this exists
 
@@ -321,6 +333,8 @@ struct Sheet: View {
 ---
 
 ## 6. `@Observable` Macro (iOS 17+) — Modern Replacement
+
+> **Priority:** DRILL — modern replacement for ObservableObject, expected on practical.
 
 ### Why the macro exists
 
@@ -393,6 +407,8 @@ A child that only **reads** can use plain `var store: TodoStore` — no wrapper 
 ---
 
 ## 7. User Interaction — Widgets Each in Minimum Useful Form
+
+> **Priority:** DRILL — Button/TextField/Toggle/Slider/Picker minimum forms practical-essential.
 
 Every interactive widget in SwiftUI either takes an action closure (Button, onTapGesture) or a `Binding` (TextField, Toggle, Slider, Picker). The pattern is identical; only the widget changes.
 
@@ -559,6 +575,8 @@ struct GameView: View {
 
 ## 8. Common Pitfalls — Why Each Trips Students
 
+> **Priority:** DRILL — graders specifically hunt these in code-improvement.
+
 | Pitfall                                                       | Why it traps                                                                                |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `@State var x = 0` *without* `private`                        | Compiles, but encourages outside writes; convention says `@State` is always private.        |
@@ -581,6 +599,8 @@ struct GameView: View {
 
 ## 9. The Drill Checklist (the night before)
 
+> **Priority:** DRILL — literally the night-before checklist; do it.
+
 Read each, recall the answer in your head:
 
 - Who **owns** the state? Which view re-renders when it changes?
@@ -595,6 +615,8 @@ Read each, recall the answer in your head:
 ---
 
 ## 10. Quick Recall Card
+
+> **Priority:** DRILL — last-minute syntax dump.
 
 ```swift
 // --- Local state ---

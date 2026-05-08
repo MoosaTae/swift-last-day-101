@@ -21,6 +21,8 @@ print(Double(a) / Double(b))
 ```
 
 Why: `Int / Int` is integer division (truncates toward zero), so `7 / 2 = 3`. Promoting both sides to `Double` gives true floating-point division `3.5`.
+
+> **React/JS:** JS has no integer-division by default — `7/2 === 3.5`. To get Swift-style integer division, use `Math.floor(7/2)` or `Math.trunc(7/2)`.
 </details>
 
 ### Q2
@@ -42,6 +44,8 @@ hi
 ```
 
 Why: printing an `Optional` directly shows the `Optional(...)` wrapper. `??` unwraps to the underlying value when non-nil, or the fallback when nil.
+
+> **React/TS:** no `Optional(...)` wrapper in JS — `console.log("hi")` prints `hi`, `console.log(undefined)` prints `undefined`. `??` works the same.
 </details>
 
 ### Q3
@@ -60,6 +64,8 @@ age=5
 ```
 
 Why: the famous string-interpolation gotcha. Interpolating an `Int?` directly embeds the wrapper text `Optional(5)`. Use `??` (or `if let`) to unwrap first.
+
+> **React/TS:** `\`age=${age}\`` produces `age=5` — JS template literals don't have an "Optional wrapper" — this gotcha is Swift-only.
 </details>
 
 ### Q4
@@ -79,6 +85,8 @@ print(a.x, b.x)
 ```
 
 Why: `struct` is a value type. `var b = a` copies, so `b.x = 7` does not touch `a`.
+
+> **React/JS:** to get the same independence: `const b = {...a}`. Plain `const b = a` aliases.
 </details>
 
 ### Q5
@@ -98,6 +106,8 @@ print(a.x, b.x)
 ```
 
 Why: `class` is a reference type. `a` and `b` point to the same instance, and `let` only freezes the reference, not the instance's `var` properties.
+
+> **React/JS:** this is JS's default for objects/classes. Mutating shared references is exactly why React imposes immutability discipline.
 </details>
 
 ### Q6
@@ -119,6 +129,8 @@ f()
 ```
 
 Why: closures capture `var`s by reference, so each call reads `n`'s current value at call time, not at the time the closure was created.
+
+> **React/JS:** identical — `let n = 1; const f = () => console.log(n);`. This is the source of stale-closure bugs in `useEffect`/`useCallback`.
 </details>
 
 ### Q7
@@ -143,6 +155,8 @@ B
 ```
 
 Why: `defer` blocks run in reverse (LIFO) order when the enclosing scope exits. Both defers fire after `print("D")` and after the function returns; the later-registered `C` runs before the earlier-registered `B`.
+
+> **React/JS:** no native `defer`. Closest: stacking `try { ... } finally { ... }` blocks, or pushing onto an array of cleanup functions and iterating in reverse — what `useEffect`'s cleanup does.
 </details>
 
 ### Q8
@@ -163,6 +177,8 @@ print(ys)
 ```
 
 Why: arrays are value types in Swift. `var ys = xs` copies, so `ys.append(4)` does not modify `xs`.
+
+> **React/JS:** opposite default — `const ys = xs; ys.push(4)` mutates `xs` too. To get Swift-style: `const ys = [...xs]`. This is the React "always spread before mutating" rule.
 </details>
 
 ### Q9
@@ -185,6 +201,8 @@ print(counts["z"] ?? -1)
 ```
 
 Why: `dict[key, default: 0] += 1` is the idiomatic counter pattern. `a` appears 3 times. `"z"` is missing, so `counts["z"]` is `nil` and `??` falls back to `-1`.
+
+> **React/JS:** `counts[w] = (counts[w] ?? 0) + 1` — same pattern, no `default:` shortcut.
 </details>
 
 ### Q10
@@ -204,6 +222,8 @@ print()
 ```
 
 Why: `stride(from: 1, through: 10, by: 3)` yields 1, 4, 7, 10 (10 is included because it lands exactly on a step). Each value is printed with a trailing space; the bare `print()` at the end emits one newline.
+
+> **React/JS:** equivalent to `for (let i = 1; i <= 10; i += 3) process.stdout.write(\`${i} \`); console.log();`. `through:` = `<=`; `to:` would be `<`.
 </details>
 
 ### Q11
@@ -223,6 +243,8 @@ print(sum)
 ```
 
 Why: the `where` clause filters to even values in `1...6`, namely 2, 4, 6. Their sum is 12.
+
+> **React/JS:** no `where` in for-of. Equivalent: `[1,2,3,4,5,6].filter(i => i % 2 === 0).reduce((a,b) => a+b, 0)` or an `if` inside the loop.
 </details>
 
 ### Q12
@@ -266,6 +288,8 @@ empty
 ```
 
 Why: `guard let s, !s.isEmpty` short-circuits on both nil and empty string. Only `"hello"` survives, and `s.first!` yields the `Character` `h`, wrapped back into a `String`.
+
+> **React/JS:** equivalent: `if (!s) return "empty"; return s[0];` — JS strings are already character-indexable.
 </details>
 
 ### Q14
@@ -291,6 +315,8 @@ now 1
 ```
 
 Why: `didSet` fires on every write that mutates the property, including `append` and `removeLast` on a stored array (because mutating an array on a struct counts as writing the whole property).
+
+> **React/JS:** closest is `useEffect(() => { console.log("now", items.length) }, [items])` — fires after every state change. JS doesn't have property observers without Proxy.
 </details>
 
 ### Q15
@@ -344,6 +370,8 @@ hello from B
 ```
 
 Why: when a conforming type does not implement a protocol requirement, the extension's default is used. When the type provides its own implementation, the type's version wins via dynamic dispatch on the protocol requirement.
+
+> **React/TS:** TS interfaces can't have defaults. Closest analog: an abstract class with method overrides, or a base mixin object that subclasses override.
 </details>
 
 ### Q17
@@ -367,6 +395,8 @@ print(c(), c(), c())
 ```
 
 Why: the inner closure captures the local `var n` by reference, so `n` survives past `makeCounter`'s return and increments across calls. `print(c(), c(), c())` evaluates the three calls left-to-right, producing `1 2 3` separated by spaces.
+
+> **React/JS:** classic JS closure factory: `function makeCounter() { let n = 0; return () => ++n; }`. Identical mechanic.
 </details>
 
 ### Q18
@@ -387,6 +417,8 @@ print(arr[0].v, snapshot[0].v)
 ```
 
 Why: `Array` and `SBox` are both value types, so `let snapshot = arr` makes a deep copy of the array and its struct elements. Mutating `arr[0].v` afterward leaves `snapshot[0].v` untouched at its earlier value of 9.
+
+> **React/JS:** opposite default — `const snapshot = arr` shares; even `[...arr]` only shallow-copies. Deep snapshots need `structuredClone(arr)` or `JSON.parse(JSON.stringify(arr))`.
 </details>
 
 ### Q19
@@ -407,6 +439,8 @@ print(mapped)
 ```
 
 Why: `compactMap` drops `nil` results and unwraps the rest, giving plain `Int`s. `map` keeps the `Int?` shape, so each element prints with its optional wrapper (or `nil`).
+
+> **React/JS:** `compactMap` ≈ `raw.map(s => Number(s)).filter(n => !Number.isNaN(n))` — JS has no built-in compactMap, but Lodash provides `_.compact`.
 </details>
 
 ### Q20
@@ -426,4 +460,6 @@ print(xs)
 ```
 
 Why: `Array` is a value type, and `for x in xs` iterates over the value of `xs` captured at loop start. Mutations to `xs` inside the body do not extend the iteration. The body runs three times (for 1, 2, 3) and appends 10, 20, 30 to the live `xs`.
+
+> **React/JS:** `for (const x of xs) xs.push(x*10)` would loop forever — JS arrays are references, so the iterator sees newly-pushed elements. Swift's value semantics prevent this footgun.
 </details>

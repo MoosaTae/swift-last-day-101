@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/master.swiftdeps"
+  },
+  "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.d",
+    "object": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.swiftdeps",
+    "diagnostics": "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.dia"
+  }
+}

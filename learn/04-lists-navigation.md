@@ -6,6 +6,8 @@ A tutorial-style walkthrough of the cheat sheet. Targets iOS 16+ (NavigationStac
 
 ## 1. Mental Model: Navigation Is Data
 
+> **Priority:** SKIM — useful framing, not asked directly.
+
 Most beginners imagine navigation imperatively: "click button, push screen." SwiftUI flips this. **Navigation state is data you mutate; the view tree re-renders to reflect it.** You don't push screens. You change a `Bool`, an array, or a `NavigationPath`, and SwiftUI figures out which screens should be visible.
 
 Three primitives cover ~100% of the exam:
@@ -39,6 +41,8 @@ The **declarative principle**: rather than calling `pushViewController(...)`, yo
 
 ## 2. ScrollView vs List
 
+> **Priority:** DRILL — knowing when to pick which is a common practical question.
+
 Both scroll. They are not interchangeable.
 
 **Why both exist**: `ScrollView` is a dumb scrolling box - you put anything in it, you control the look. `List` is a smart scrolling table - it gives you free row chrome (separators, insets, swipe-to-delete, EditButton) and **lazily** recycles rows so a 10,000-row list doesn't melt your phone.
@@ -71,6 +75,8 @@ Rule of thumb: if your rows look uniform and you might want delete/move, reach f
 ---
 
 ## 3. List Basics
+
+> **Priority:** DRILL — `List`/`ForEach` + `id:` patterns are practical-exam staples.
 
 `List` has three forms. Pick based on what your data looks like.
 
@@ -130,6 +136,8 @@ List {
 
 ## 4. Identifiable vs Hashable - the Most Confused Pair
 
+> **Priority:** DRILL — section name says it; classic exam confusion.
+
 Students conflate these. They look similar, both involve "uniqueness," and types often conform to both. Here's the actual split:
 
 | Protocol | Question it answers | Used by |
@@ -170,6 +178,8 @@ To use a value as an `id`, SwiftUI needs to hash and compare it - that means `Ha
 ---
 
 ## 5. NavigationStack - the Heart of This Topic
+
+> **Priority:** DRILL — value-based navigation pattern is heart of practical.
 
 ### Why it replaced NavigationView
 
@@ -292,6 +302,8 @@ Note: `.navigationTitle` is attached to **the screen content**, not to the `Navi
 
 ## 6. Going Back
 
+> **Priority:** DRILL — `dismiss` and back-button behavior tested often.
+
 Three ways to leave a screen, and one universal principle that ties them together.
 
 ### `@Environment(\.dismiss)` - works for both push and modal
@@ -333,6 +345,8 @@ This principle is why "navigation is data" matters: closing isn't a separate API
 ---
 
 ## 7. NavigationPath - Programmatic Stack Manipulation
+
+> **Priority:** SKIM — useful but exam usually tests basic `[Hashable]` path.
 
 `NavigationPath` is a **type-erased** stack of pushed values. Type-erased because a single navigation stack might contain a `User`, then a `Post`, then a `Comment` - heterogeneous types. A `[Any]` would lose `Hashable`. `NavigationPath` keeps the hash machinery while accepting any `Hashable`.
 
@@ -387,6 +401,8 @@ Common patterns:
 ---
 
 ## 8. Modal Presentation - Sheet and FullScreenCover
+
+> **Priority:** DRILL — `.sheet(isPresented:)` and `item:` patterns very common.
 
 Modal = a screen that appears **over** the current one, not inside the navigation stack. Use it for side tasks: composing a message, picking a date, settings, "Add new" forms.
 
@@ -472,6 +488,8 @@ struct SecondScreen: View {
 
 ## 9. NavigationStack vs TabView
 
+> **Priority:** SKIM — composition rule is short, easy once seen.
+
 These compose. They don't compete.
 
 ```
@@ -510,6 +528,8 @@ TabView(selection: $currentTab) {
 ---
 
 ## 10. Three Worked Examples
+
+> **Priority:** DRILL — these mirror practical-exam refactoring tasks.
 
 ### Example 1 - List of strings + closure-based push
 
@@ -634,6 +654,8 @@ Why a `NavigationStack` inside the sheet? The sheet is its own screen world. To 
 ---
 
 ## 11. Common Pitfalls (likely exam traps)
+
+> **Priority:** DRILL — title literally says "likely exam traps".
 
 Each of these has tripped real students. Read them before the exam.
 

@@ -2,6 +2,8 @@
 
 A practice pack aligned with the closed-book written exam. Every snippet uses only the basic toolkit allowed by the instructor: `VStack`, `HStack`, `ZStack`, `Text`, `Image`, `Spacer`, plus basic modifiers (`.frame`, `.padding`, `.background`, `.foregroundColor`, `.cornerRadius`, `.font`, `.fontWeight`, `.resizable`, `.scaledToFit/Fill`, `.multilineTextAlignment`, `.lineLimit`).
 
+> **React/CSS quick map:** `VStack` = `flex-col`, `HStack` = `flex-row`, `ZStack` = `position: relative` + absolute children (or `grid`). `Spacer()` = a child with `flex: 1` (or `margin-left: auto`). `.frame(maxWidth: .infinity)` = `flex: 1` / `width: 100%`. **The big difference**: modifier order matters in SwiftUI (`.padding().background()` ≠ `.background().padding()`), whereas CSS is mostly order-independent.
+
 ---
 
 ## Section A — Output / Render Prediction (10 problems)
@@ -18,6 +20,7 @@ Text("Hello")
 
 A yellow rectangle whose size is `Text("Hello")` plus 16pt of padding on every side. The yellow fills the padded area, so there is yellow space around the letters. Order: padding wraps the text first, then `.background` paints behind that already-padded view.
 
+> **React/CSS:** equivalent to `<span style={{ padding: 16, background: 'yellow' }}>Hello</span>` — CSS background fills the padding box automatically.
 </details>
 
 ### A2. Background then padding
@@ -32,6 +35,7 @@ Text("Hello")
 
 The yellow background hugs the text exactly (no inner gap). Then padding adds 16pt of transparent space outside the yellow box. Visually: small yellow rectangle that just wraps the glyphs, surrounded by a clear margin.
 
+> **React/CSS:** like wrapping yellow tightly: `<span><span style={{ background: 'yellow' }}>Hello</span></span>` with 16pt margin on the outer. **There is no CSS analog to "swap modifier order on the same element"** — Swift modifier order = nesting wrapper views.
 </details>
 
 ### A3. Image without `.resizable()`
@@ -45,6 +49,7 @@ Image("puppy")
 
 The image keeps its intrinsic (original) pixel size and is centered inside a 50x50 frame. If the asset is larger than 50x50 it overflows the frame visually (unless `.clipped()` is added). `.frame` on an image without `.resizable()` only sets the layout box, not the image size.
 
+> **React/CSS:** like `<img src="puppy" />` inside a `<div style={{ width:50, height:50 }}>` — the img keeps its natural size and overflows the div without `object-fit: contain` or `width: 100%`.
 </details>
 
 ### A4. `.frame` before `.resizable()`
@@ -58,7 +63,6 @@ Image("puppy")
 <details><summary>Answer</summary>
 
 Compiles, but `.resizable()` must be applied to the original `Image`, not to the framed view. The intent of "shrink the picture into 50x50" fails here — the image is still rendered at intrinsic size inside the 50x50 frame. Correct order is `.resizable()` first, then `.frame`.
-
 </details>
 
 ### A5. Background then cornerRadius vs cornerRadius then background
@@ -82,6 +86,7 @@ Text("A")
 A5a: blue 100x40 rectangle with rounded corners (correct rounded button look).
 A5b: `.cornerRadius` is applied to the un-coloured frame, then `.background` paints a fresh blue rectangle BEHIND that — with square corners. Result: square blue rectangle. Always do `frame -> background -> cornerRadius`.
 
+> **React/CSS:** in CSS this is one element: `border-radius` clips the background regardless of property order — no equivalent gotcha. Swift is stricter because each modifier wraps a new view.
 </details>
 
 ### A6. HStack with one Spacer
@@ -98,6 +103,7 @@ HStack {
 
 `Left` pinned to the left edge, `Right` pinned to the right edge, the `Spacer` consumes all the gap in between. The HStack itself fills the parent width because a Spacer expands.
 
+> **React/CSS:** `display: flex; justify-content: space-between` — or simply `<div className="flex"><span>Left</span><div className="flex-1"/><span>Right</span></div>`.
 </details>
 
 ### A7. VStack default alignment
@@ -113,6 +119,7 @@ VStack {
 
 Both texts are horizontally centered relative to each other (default `VStack` alignment is `.center`). To left-align, write `VStack(alignment: .leading)`.
 
+> **React/CSS:** equivalent to `flex flex-col items-center`. `.leading` = `items-start`. Note: SwiftUI defaults to `center`, Tailwind/CSS flex defaults to `stretch`.
 </details>
 
 ### A8. ZStack alignment
@@ -131,6 +138,7 @@ ZStack(alignment: .topTrailing) {
 
 A 200x200 grey square with a small red "NEW" badge anchored to the top-right corner. The `Color.gray` fills the ZStack (gives it size); the badge sits on top, aligned top-trailing because of the ZStack alignment argument.
 
+> **React/CSS:** `<div className="relative w-50 h-50 bg-gray-400"><span className="absolute top-0 right-0 ...">NEW</span></div>` — ZStack alignment is the absolute-positioning anchor.
 </details>
 
 ### A9. `.frame(maxWidth: .infinity)` inside HStack
@@ -147,6 +155,7 @@ HStack(spacing: 10) {
 
 Three equally wide coloured cells (red, green, blue) splitting the available row width into thirds, each containing a centered letter. `maxWidth: .infinity` makes each child claim equal share of the remaining horizontal space.
 
+> **React/CSS:** equivalent to three children with `flex: 1` each — `<div className="flex gap-2"><div className="flex-1 bg-red-500">A</div>...</div>`.
 </details>
 
 ### A10. SF Symbol sizing trap
@@ -161,6 +170,7 @@ Image(systemName: "star.fill")
 
 A small yellow star at its default body-text size, centered inside a 100x100 invisible frame. SF Symbols scale with `.font(.system(size:))` or `.imageScale`, NOT with `.frame`. To actually grow the glyph, add `.resizable().scaledToFit()` before `.frame`, or use `.font(.system(size: 100))`.
 
+> **React/CSS:** SF Symbols behave like icon fonts (e.g. Font Awesome) — sized by `font-size`, not container width. `.frame` is the icon's wrapper box, not the glyph itself.
 </details>
 
 ---
@@ -190,6 +200,7 @@ Reasons:
 - `.resizable()` must come BEFORE `.frame`, otherwise the bitmap renders at intrinsic size and is just placed inside the 80x80 box.
 - Add `.scaledToFill()` (with the clip) so the avatar fills the circle without distortion.
 
+> **React/CSS:** equivalent to `<img className="w-20 h-20 rounded-full object-cover" />`. `object-cover` ≈ `.scaledToFill().clipped()`.
 </details>
 
 ### B2. Padding before background when student wants the colour to include padding
@@ -214,6 +225,7 @@ Reasons:
 - The original paints blue tightly around the glyphs and then adds clear padding outside — the button looks tiny.
 - Apply `.padding()` first so the view grows, THEN `.background` to colour the enlarged area. This is the standard "tap target with breathing room" pattern.
 
+> **React/CSS:** in CSS, `padding` and `background` are applied to the same element so order is irrelevant. SwiftUI gotcha: each modifier wraps a new view, so order = nesting order = visual order.
 </details>
 
 ### B3. Hard-coded width that should fill the parent
@@ -247,6 +259,7 @@ Reasons:
 - Hard-coding `width: 180` breaks on different device sizes (SE vs Pro Max) and inside an HStack of stat cards.
 - `maxWidth: .infinity` lets the card expand to share row space equally with siblings, which is the typical stat-card pattern.
 
+> **React/CSS:** same lesson — prefer `flex: 1` / `w-full` over fixed widths. Hard-coded `width: 180px` is a responsive-design smell in both worlds.
 </details>
 
 ### B4. Missing Spacer for left-anchoring text
@@ -272,6 +285,7 @@ Reasons:
 - An HStack with a single child centers it because there is nothing else competing for space.
 - Adding a trailing `Spacer()` consumes the right side of the row, pushing the text to the leading edge — the standard form-row layout.
 
+> **React/CSS:** `<div className="flex"><span>Username</span><div className="flex-1"/></div>` — or just `justify-start` + `w-full`. `Spacer()` is the explicit "fill remaining space" child.
 </details>
 
 ### B5. Excessive ZStack nesting that could be `.background()`
@@ -302,6 +316,7 @@ Reasons:
 - A ZStack just to put a colour behind a single label is overkill. The `.background` modifier exists for exactly this case.
 - Fewer views means clearer intent and easier maintenance. Reserve ZStack for multiple stacked children that need independent alignment.
 
+> **React/CSS:** `<div className="bg-blue-500 rounded-xl">` — no need for an extra absolutely-positioned color element. Same simplification.
 </details>
 
 ### B6. Wrong VStack alignment when content should be leading
@@ -334,6 +349,7 @@ Reasons:
 - Default VStack alignment is `.center`, which centers each line independently — fine for hero text, wrong for left-aligned list rows.
 - Adding `alignment: .leading` makes both lines share the same left edge, matching typical list-cell wireframes.
 
+> **React/CSS:** swap `items-center` (default for SwiftUI VStack) → `items-start` (the typical list-row choice).
 </details>
 
 ### B7. Missing multilineTextAlignment / lineLimit on a long caption
@@ -358,6 +374,7 @@ Reasons:
 - Without `.multilineTextAlignment`, wrapped lines fall back to the leading edge even though the rest of the screen is centered.
 - `.lineLimit(3)` protects the layout from overflowing when the string grows. Combine with truncation rather than letting the card stretch unpredictably.
 
+> **React/CSS:** `text-align: center` + `line-clamp-3`. Same problem (long copy breaks layout), same kind of fix.
 </details>
 
 ### B8. Hard-coded magic colour values
@@ -388,11 +405,14 @@ Reasons:
 - Raw `Color(red:green:blue:)` literals scattered across views are unreadable and impossible to keep consistent.
 - Use a system colour (`.blue`) for prototypes, or define a named asset colour like `Color("BrandPrimary")`. The code now communicates intent ("brand colour") instead of an opaque triplet.
 
+> **React/CSS:** raw `rgb(41,128,217)` everywhere is the same smell. Prefer Tailwind tokens (`bg-blue-500`), CSS variables (`var(--brand-primary)`), or a theme constant.
 </details>
 
 ---
 
 ## Section C — View Decomposition (8 wireframes)
+
+> **React framing:** these are pure component-tree exercises. Each `VStack` ≈ a `<div className="flex flex-col">`, each `HStack` ≈ `<div className="flex flex-row">`. The decomposition skill is identical to React component splitting.
 
 ### C1. Profile card — image + name + email column
 
@@ -825,6 +845,7 @@ Why this works:
 - The coloured `.background` is applied AFTER `.padding(.vertical, 20)` so the colour includes the inner padding.
 - `.padding()` is moved to the outer HStack instead of each card, so the gap between cards is controlled by `spacing: 15` and the screen margin is uniform.
 
+> **React/CSS:** equivalent to two `flex-1` cards in a `flex gap-4 p-4` container. Padding on the outer flex parent = uniform screen margin; gap between children = `gap-4`.
 </details>
 
 ### D2. Notification row refactor
@@ -887,4 +908,5 @@ Why this works:
 - A `Spacer()` between the text column and the badge pushes `NEW` to the trailing edge.
 - The red badge applies `.padding` BEFORE `.background`, so the red pill includes the inner spacing instead of leaving a tight red rectangle wrapped by transparent padding.
 
+> **React/CSS:** identical pattern — `<img className="w-10 h-10 rounded-full object-cover" />`, `flex-1` on the text column (or `flex-grow`), `ml-auto` or `<Spacer/>` to push the badge right, and `px-2 py-1 bg-red-500 rounded` for the pill.
 </details>

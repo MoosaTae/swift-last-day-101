@@ -1,5 +1,13 @@
 # Topic 5 — API Calls & AppStorage: Practice
 
+> **React framing — this topic maps very cleanly:**
+> - `URLSession.shared.data(from:)` ≈ `fetch(url)`
+> - `JSONDecoder().decode(T.self, from: data)` ≈ `JSON.parse(text) as T` (or Zod)
+> - `Codable` struct ≈ TypeScript interface + Zod schema (shape + parse)
+> - `@AppStorage("k")` ≈ `useLocalStorage("k", default)` custom hook over `localStorage`
+> - `.task { ... }` ≈ `useEffect(() => { load(); return () => abort() }, [])` with built-in cancellation
+> - `async/await` syntax is identical.
+
 ## Section A — Output Prediction
 
 ### A1. Decode simple JSON
@@ -22,6 +30,8 @@ print("\(u.id)-\(u.name)")
 ```
 
 Why: Property names match JSON keys exactly, so default Codable synthesis fills them in.
+
+> **React/TS:** equivalent to `const u = JSON.parse(json) as User;` — but TS `as` is unchecked at runtime, while `Codable` actually validates types.
 </details>
 
 ### A2. snake_case JSON without CodingKeys
@@ -48,6 +58,8 @@ decode failed
 ```
 
 Why: The JSON key is `user_id` but the struct expects `userId`; without `CodingKeys` or `.convertFromSnakeCase`, decoding throws and the catch branch runs.
+
+> **React/TS:** `JSON.parse` doesn't rename keys — `obj.userId` is `undefined` if JSON has `user_id`. TS won't catch it; only Zod or a manual mapper does what `Codable` enforces.
 </details>
 
 ### A3. Missing field in JSON
@@ -74,6 +86,8 @@ missing
 ```
 
 Why: `name` is non-optional and absent from the JSON, so decoding throws `keyNotFound` and the catch branch prints "missing".
+
+> **React/TS:** TS would let this through silently (`name` is `undefined` at runtime). Zod throws a similar validation error to Swift's `keyNotFound`.
 </details>
 
 ### A4. Sequential await order
@@ -100,6 +114,8 @@ done 3
 ```
 
 Why: Sequential `await` calls run one after the other; each prints before the next is invoked.
+
+> **React/JS:** identical behavior — `await a(); await b();` runs sequentially. Use `Promise.all([a(), b()])` for concurrent. Swift equivalent: `async let`.
 </details>
 
 ### A5. AppStorage first read returns default
@@ -121,6 +137,8 @@ hello
 ```
 
 Why: With no value previously written under that UserDefaults key, `@AppStorage` returns the declared default.
+
+> **React:** equivalent to `useLocalStorage("greeting_unused", "hello")` — the second arg is the default when the key is absent.
 </details>
 
 ### A6. AppStorage after write
@@ -139,6 +157,8 @@ tae
 ```
 
 Why: `@AppStorage` is a thin wrapper over `UserDefaults`; once a value is written under the same key, subsequent reads return that value instead of the default.
+
+> **React:** equivalent to writing `localStorage.setItem("username", "tae")` and then having `useLocalStorage("username", "")` read it back.
 </details>
 
 ### A7. Encoding to JSON
@@ -157,6 +177,8 @@ print(String(data: data, encoding: .utf8)!)
 ```
 
 Why: `JSONEncoder` emits a flat object whose keys are the property names and values match the stored values; default output has no whitespace.
+
+> **React/JS:** `JSON.stringify({x:3, y:4})` produces the same string.
 </details>
 
 ### A8. Decode array count
@@ -175,6 +197,8 @@ print(posts.count)
 ```
 
 Why: `[Post].self` decodes a JSON array; the resulting Swift array's count equals the number of array elements.
+
+> **React/JS:** `(JSON.parse(json) as Post[]).length === 3`.
 </details>
 
 ## Section B — Code Improvement
@@ -207,6 +231,8 @@ func load() async {
 ```
 
 Reasons: Force-unwrapping `URL(string:)` crashes on a typo. `try!` crashes on any network/parse error. Use `guard let` plus a `do/catch`.
+
+> **React/JS:** `new URL(...)` throws on a bad string and `fetch` rejects on network failure — wrap in `try { await fetch(...) } catch (e) { ... }`. Same lesson: never `!` user-facing failure points.
 </details>
 
 ### B2. Missing await
@@ -231,6 +257,8 @@ func load() async throws {
 ```
 
 Reasons: `URLSession.shared.data(from:)` is `async throws`; without `await` it does not compile.
+
+> **React/JS:** identical compile-error mechanic — calling an `async` function without `await` returns a `Promise<T>`, not `T`. Same fix.
 </details>
 
 ### B3. Missing try on decode
@@ -261,6 +289,8 @@ func parse(_ data: Data) {
 ```
 
 Reasons: `decode(_:from:)` throws; you must use `try` and handle errors with `do/catch` (or `throws`).
+
+> **React/JS:** `JSON.parse` also throws — wrap `try { JSON.parse(text) } catch (e) { ... }`. Swift's `try` keyword forces you to acknowledge it; JS lets you forget until production.
 </details>
 
 ### B4. Calling async from sync context
@@ -291,6 +321,8 @@ struct ContentView: View {
 ```
 
 Reasons: A `Button` action closure is synchronous, so `await` is illegal there. Wrap the call in `Task { ... }` to bridge into an async context.
+
+> **React:** identical — `<button onClick={() => { void load() }}>` or `<button onClick={async () => await load()}>`. `Task { ... }` is Swift's "fire-and-forget Promise"; `() => { load() }` is JS's.
 </details>
 
 ### B5. Property names mismatch JSON
@@ -322,6 +354,8 @@ struct Post: Codable {
 ```
 
 Reasons: Without a key mapping, decoding the `user_id` field into `userId` fails. `CodingKeys` (or the snake-case strategy) bridges the two naming styles.
+
+> **React/TS:** in TS you'd manually map: `{ userId: raw.user_id, id: raw.id, title: raw.title }` — or use a Zod transform. `CodingKeys` is the declarative form.
 </details>
 
 ### B6. Int field where JSON sends String
@@ -350,6 +384,8 @@ struct Product: Codable {
 ```
 
 Reasons: JSON `"1990"` is a string, not a number, so decoding into `Int` throws a type-mismatch. Decode into `String` and convert when reading.
+
+> **React/TS:** equivalent to receiving `price: string` then computing `Number(price)` in a getter or `useMemo`.
 </details>
 
 ### B7. Optional fields not marked Optional
@@ -374,6 +410,8 @@ struct User: Codable {
 ```
 
 Reasons: Non-optional Codable properties throw if the key is missing or null. Declaring possibly-absent fields as `Optional` lets decoding succeed.
+
+> **React/TS:** TS interface `email?: string` (or `email: string | undefined`) — same idea.
 </details>
 
 ### B8. Completion-handler API mixed with async
@@ -404,6 +442,8 @@ func load() async -> Data? {
 ```
 
 Reasons: The completion handler runs after the function returns, so `result` is always `nil`. Use the modern `data(from:)` async API instead.
+
+> **React/JS:** the same bug shape as returning before a callback fires. Modern `await fetch(...)` replaces callback-style XHR or `dataTask`.
 </details>
 
 ### B9. Mutating @Published off the main thread
@@ -439,6 +479,8 @@ final class PostsVM: ObservableObject {
 ```
 
 Reasons: SwiftUI requires `@Published` mutations on the main actor. Annotating the class `@MainActor` guarantees that, and replacing `try!` with `do/catch` avoids crashes.
+
+> **React/JS:** JS is single-threaded by default, so this specific bug doesn't exist. The closest analog: when posting from a Web Worker back to the UI thread, you must `postMessage`. `@MainActor` is "always run this on the UI thread."
 </details>
 
 ### B10. .onAppear with await
@@ -467,6 +509,8 @@ struct PostsView: View {
 ```
 
 Reasons: `onAppear`'s closure is synchronous, so `await` is a compile error. `.task` provides an async context tied to the view's lifetime.
+
+> **React:** `.onAppear` ≈ `useEffect(() => { load() }, [])` (no cleanup). `.task` ≈ `useEffect(() => { const c = new AbortController(); load(c.signal); return () => c.abort(); }, [])` — the cancellation is built in. Always prefer `.task` for fetches.
 </details>
 
 ## Section C — Practical Mini-Tasks
@@ -536,6 +580,20 @@ struct PostListView: View {
     }
 }
 ```
+
+> **React:** equivalent shape:
+> ```tsx
+> const [posts, setPosts] = useState<Post[]>([]);
+> const [err, setErr] = useState<string|null>(null);
+> useEffect(() => {
+>   (async () => {
+>     try {
+>       const r = await fetch("https://.../posts");
+>       setPosts(await r.json());
+>     } catch (e) { setErr(String(e)); }
+>   })();
+> }, []);
+> ```
 </details>
 
 ### C2. snake_case mismatch without renaming
@@ -579,6 +637,8 @@ let post = try decoder.decode(Post.self, from: data)
 ```
 
 Either keeps the Swift property `userId` while accepting `user_id` in JSON.
+
+> **React/TS:** Option 1 is a Zod transform: `z.object({ userId: z.number().describe("user_id"), ... })` with manual remap. Option 2 is a project-wide convention you'd implement in your fetch wrapper.
 </details>
 
 ### C3. Persist user's name across launches
@@ -623,6 +683,8 @@ struct WelcomeView: View {
 ```
 
 `@AppStorage` writes to `UserDefaults` on every change and reads it back on launch, so the name persists.
+
+> **React:** swap `useState("")` for `useLocalStorage("user_name", "")`. Same one-line refactor — the wrapper handles read-on-mount and write-on-change.
 </details>
 
 ### C4. Refactor onAppear to .task
@@ -661,6 +723,8 @@ struct FeedView: View {
 ```
 
 `.task` already provides an async context, eliminates the need for an explicit `Task { }`, and automatically cancels the work when the view leaves the hierarchy. `.onAppear` runs synchronously and does not handle cancellation.
+
+> **React:** `useEffect(() => { load() }, [])` (no cleanup) → `useEffect(() => { const c = new AbortController(); load(c.signal); return () => c.abort(); }, [])`. `.task` is the latter for free.
 </details>
 
 ### C5. Persisted favorites Set<Int>
@@ -756,4 +820,6 @@ struct FavoritesListView: View {
 ```
 
 `@AppStorage` natively supports `Data`, so we serialize the `Set<Int>` to JSON `Data` on every write and decode it on every read. Tapping a row mutates a local copy of the set and re-encodes it; SwiftUI re-renders because `favoritesData` changed.
+
+> **React:** equivalent to `localStorage.setItem("favs", JSON.stringify([...favs]))` on toggle and `JSON.parse(localStorage.getItem("favs") ?? "[]")` on read. `@AppStorage` only natively supports primitives — for collections you serialize to `Data`/JSON, exactly like localStorage.
 </details>

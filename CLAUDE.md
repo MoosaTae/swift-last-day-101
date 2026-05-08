@@ -31,18 +31,21 @@ Astro 6 + React 19 + Tailwind v4. Node ≥ 22.12.
 
 ```bash
 cd site
-npm install
-npm run dev      # rebuilds cards.json + pages.json then runs astro dev (localhost:4321)
-npm run build    # same prebuild step, then static build to dist/
-npm run preview  # preview the built site
+pnpm install
+pnpm dev         # rebuilds cards.json + pages.json + search-index.json then runs astro dev (localhost:4321)
+pnpm build       # same prebuild step, then static build to dist/
+pnpm preview     # preview the built site
 ```
 
-`predev` / `prebuild` automatically run `build-cards.mjs` and `build-pages.mjs`. If you edit markdown under `exercise/`, `knowledge/`, or `learn/` while `astro dev` is already running, **restart it** — Astro won't re-run those Node scripts on file change.
+Package manager is **pnpm** (lockfile: `pnpm-lock.yaml`). Don't run `npm install` — it will create a competing `package-lock.json`.
+
+`predev` / `prebuild` automatically run `build-cards.mjs`, `build-pages.mjs`, and `build-search.mjs`. If you edit markdown under `exercise/`, `knowledge/`, or `learn/` while `astro dev` is already running, **restart it** — Astro won't re-run those Node scripts on file change.
 
 ### Build pipeline
 
 - `scripts/build-cards.mjs` reads `../exercise/exercises-NN-*.md` → writes `src/data/cards.json`. It splits on `## Section X` headers, then on `### Q1` / `### A1` style headers, and pairs the prompt markdown with the markdown inside `<details><summary>Answer</summary>…</details>`. Code blocks are pre-rendered with highlight.js. **A card without a `<details>` block is silently dropped.**
 - `scripts/build-pages.mjs` reads `../knowledge/NN-*.md` and `../learn/NN-*.md` → writes `src/data/pages.json` keyed by 2-digit slug. Only slugs present in its `TOPIC_LABEL` map (`01`–`05`) are emitted; topics 06–08 are exercise-only.
+- `scripts/build-search.mjs` reads the just-built `src/data/pages.json`, strips HTML to plain text, and writes `public/search-index.json` (one entry per knowledge/learn/mock page) — consumed by the Cmd+K palette via `fetch('/search-index.json')` on first open. Must run after `build-pages.mjs`.
 - Topic code → label mapping is duplicated in `build-cards.mjs`, `build-pages.mjs`, and `DrillDeck.tsx` (`TOPIC_SHORT`). Keep all three in sync when adding a topic.
 
 ### Routes
@@ -50,7 +53,7 @@ npm run preview  # preview the built site
 - `/` — `DrillDeck` (active-recall flashcards from `cards.json`, hide-by-default, persists progress + topic filters in `localStorage` under `drill-progress-v1` / `drill-filters-v1`). Keyboard: Space reveal/next, J prev, K next, 1 got, 2 review, S shuffle.
 - `/knowledge/` and `/knowledge/[slug]` — rendered from `pages.json.knowledge`
 - `/learn/` and `/learn/[slug]` — rendered from `pages.json.learn`
-- The sidebar (`src/layouts/Sidebar.astro`) is the global shell; pages opt in by wrapping their body in `<Sidebar title=… active=…>`.
+- The sidebar (`src/layouts/Sidebar.astro`) is the global shell; pages opt in by wrapping their body in `<Sidebar title=… active=…>`. It also mounts `<CommandPalette client:load />` so Cmd/Ctrl+K opens a Fuse.js fuzzy search across all knowledge/learn/mock pages on every route.
 
 ## Authoring content
 

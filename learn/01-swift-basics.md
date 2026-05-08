@@ -6,6 +6,8 @@
 
 ## Mental Model: What Swift Actually Is
 
+> **Priority:** SKIM — framing intro, helpful but not asked verbatim.
+
 Swift is a **statically typed, type-inferred, compiled** language that gives you two parallel tools for almost every job:
 
 | Concern              | Safe / default tool         | Sharp tool (use rarely)     |
@@ -29,6 +31,8 @@ If you internalize these three, you can answer 80% of output-prediction question
 ---
 
 ## 1. Variables and Type Inference
+
+> **Priority:** DRILL — `let` vs `var` and inference appear in output prediction.
 
 ### Why this exists
 
@@ -67,6 +71,8 @@ This is exam-bait. If both sides of `/` are `Int`, the result is `Int`.
 ---
 
 ## 2. Optionals — The Box Mental Model
+
+> **Priority:** DRILL — `if let`, `guard let`, `??` are exam staples.
 
 ### Why optionals exist
 
@@ -156,6 +162,8 @@ print(name.uppercased())          // name is now non-optional in this scope
 
 ## 3. Force Unwrap (`!`) — The Canonical Bad Code
 
+> **Priority:** DRILL — code-improvement target, rewrite reflex required.
+
 ### Why this is the #1 exam target
 
 Force unwrap converts `T?` to `T` by asserting "I promise this is not nil." If you're wrong, the program crashes. The exam will hand you code with `!` and ask you to fix it. This section is worth practicing until the rewrites are reflex.
@@ -202,6 +210,8 @@ Memorize that sentence structure. Substitute `URL(string:)`, `dict[k]`, or `as!`
 
 ## 4. String <-> Int Conversions
 
+> **Priority:** DRILL — `Int(str)` returns optional, classic gotcha.
+
 ### Why this comes up constantly
 
 User input arrives as `String`. Numeric IDs, ports, ages, prices all need parsing. The parse can fail, so the result is optional.
@@ -226,6 +236,8 @@ print("age=\(x ?? 0)")      // age=20
 ---
 
 ## 5. Collections
+
+> **Priority:** DRILL — dict subscript returns optional, common output trick.
 
 ### Mental model
 
@@ -285,6 +297,8 @@ let (a, b) = (1, 2)        // destructuring
 
 ## 6. Control Flow
 
+> **Priority:** DRILL — `if let`, `guard`, `switch` exhaustiveness in output prediction.
+
 ### `if` with bindings
 
 Already covered in optionals, but worth repeating: `if let` is a *statement*, not just sugar.
@@ -330,6 +344,8 @@ for k in 1..<5 { ... }            // 1,2,3,4
 ---
 
 ## 7. Closures
+
+> **Priority:** DRILL — trailing closure syntax + `map`/`filter` output trace.
 
 ### Mental model
 
@@ -380,6 +396,8 @@ You probably won't be tested on capture lists for this exam, but know they exist
 
 ## 8. Functions
 
+> **Priority:** DRILL — argument labels and `_` patterns appear in code reading.
+
 ### Why argument labels exist
 
 Swift lets you have a *parameter name* (used inside the function) and an *argument label* (used at the call site). This makes call sites read like English while keeping the body terse.
@@ -422,6 +440,8 @@ if let r = minMax([3, 1, 4, 1, 5]) {
 ---
 
 ## 9. Struct vs Class — Value vs Reference
+
+> **Priority:** DRILL — value vs reference semantics is a classic output trace.
 
 ### The memory model (this is the core idea)
 
@@ -489,6 +509,8 @@ Default to `struct`. Reach for `class` only when you have a reason.
 
 ## 10. Enums
 
+> **Priority:** SKIM — basic enums useful, associated values rarely deep tested.
+
 ### Why enums are powerful in Swift
 
 Swift enums are **sum types**: each case can carry its own associated data. They model "this value is exactly one of N shapes" precisely. Combined with `switch`, the compiler enforces that you handle every case.
@@ -529,6 +551,8 @@ This is how `Optional` itself is implemented under the hood: `enum Optional<T> {
 ---
 
 ## 11. Output Prediction Practice
+
+> **Priority:** DRILL — directly mirrors written-exam Output Prediction items.
 
 These are calibrated to the exam style. Cover the right column, predict, then check.
 
@@ -679,6 +703,8 @@ age=20
 
 ## 12. Code Improvement Examples (Bad -> Better)
 
+> **Priority:** DRILL — Code Improvement is a graded written-exam category.
+
 ### Example A: Force-unwrapped String -> Int
 
 **Bad:**
@@ -780,6 +806,8 @@ The lesson: pick the data type that matches your sharing model. Don't fight valu
 
 ## 13. Common Pitfalls
 
+> **Priority:** DRILL — graders specifically hunt these in written sections.
+
 These trip students up because the code *compiles* and the bug only appears at runtime or in surprising output.
 
 | Pitfall                                       | Why it trips students                                                       |
@@ -800,6 +828,8 @@ These trip students up because the code *compiles* and the bug only appears at r
 ---
 
 ## 14. Quick Recall Card
+
+> **Priority:** DRILL — last-minute syntax dump, repeat aloud tonight.
 
 Last-minute syntax dump. Cover the explanation, recall the line.
 

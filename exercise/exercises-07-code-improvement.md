@@ -31,6 +31,8 @@ func ageInTenYears(from text: String) -> Int {
 ```
 
 Why: `Int(_:)` is a failable initializer, so replace `!` with `if let` / `guard let` / `??` to turn a bad string into a graceful default instead of a runtime crash.
+
+> **React/TS:** TS analog — `parseInt(text)!` or `Number(text)` followed by no NaN check. Same fix: `const n = Number(text); if (Number.isNaN(n)) return 0;`.
 </details>
 
 ### Q2
@@ -61,6 +63,8 @@ func describe(_ any: Any) -> String {
 ```
 
 Why: `as?` returns an `Optional` so the failure path is recoverable; `as!` is the reference-type counterpart to `Int("abc")!` — same red flag, same fix.
+
+> **React/TS:** `as` in TS is compile-time only — runtime needs a real check: `if (typeof v === "string") { ... }`. `as?` is the runtime-checked equivalent.
 </details>
 
 ### Q3
@@ -103,6 +107,8 @@ struct Cart {
 ```
 
 Why: leaving the element type to inference produces `[Any]`, which is almost never what you want; annotate the array or use a named struct so the meaning of each field is explicit.
+
+> **React/TS:** TS infers `never[]` from `let items = []` — same kind of "useless type" gotcha. Annotate `items: LineItem[] = []` or use a named interface.
 </details>
 
 ### Q4
@@ -131,6 +137,8 @@ func tax(on amount: Double) -> Double {
 ```
 
 Why: `let` documents immutability and lets the compiler optimize; reach for `var` only when something is genuinely reassigned.
+
+> **React/JS:** identical — prefer `const` over `let`. Same `prefer-const` ESLint rule.
 </details>
 
 ### Q5
@@ -168,6 +176,8 @@ print(origin.x)        // 0 — independent copy
 ```
 
 Why: SwiftUI and the Swift idiom prefer value semantics for plain data; reach for `class` only when you actually need shared identity.
+
+> **React/JS:** JS only has reference semantics — every "copy" is really an alias unless you spread (`{...origin}`). React's immutability rules are the workaround Swift gets free with structs.
 </details>
 
 ### Q6
@@ -213,6 +223,8 @@ func badge(for o: Order) -> String {
 ```
 
 Why: an enum closes the set of valid values and `switch` forces every case to be handled, so misspellings stop compiling and new cases flag every site that needs an update.
+
+> **React/TS:** equivalent to a string-literal union — `type Status = "pending" | "paid" | "shipped" | "cancelled"` with exhaustive switch via the `never` trick.
 </details>
 
 ### Q7
@@ -257,6 +269,8 @@ final class FeedLoader {
 ```
 
 Why: closures inside reference types capture `self` strongly; `[weak self]` breaks the cycle and `guard let self` re-binds it for the body without sprinkling `?.` everywhere.
+
+> **React/JS:** JS GC handles cyclic references automatically — this exact bug doesn't exist. The closest analog is using `AbortController` to cancel pending fetches when a component unmounts to avoid setting state on an unmounted component.
 </details>
 
 ### Q8
@@ -293,6 +307,8 @@ struct PrimeListView: View {
 ```
 
 Why: `body` must stay cheap because it is called frequently; the view's job is to describe UI, not to recompute heavy data on every render.
+
+> **React:** identical lesson — wrap with `useMemo(() => computePrimes(), [])` or hoist the constant outside the component. Heavy work in render is the same anti-pattern.
 </details>
 
 ### Q9
@@ -337,6 +353,8 @@ struct CounterView: View {
 ```
 
 Why: with the iOS 17 Observation framework, the view owns an `@Observable` model via `@State`, which guarantees one instance per view identity that survives re-renders.
+
+> **React:** equivalent to `useState(() => new Store())` (lazy init, persists across renders) vs `const store = new Store()` written directly in the component (rebuilt every render).
 </details>
 
 ### Q10
@@ -371,6 +389,8 @@ struct GreetView: View {
 ```
 
 Why: the SwiftUI mental model is Action -> State -> Re-render, so side effects belong in event handlers or `.task`/`.onAppear`, not in `body`.
+
+> **React:** the **exact same bug** — calling `setState` during render causes "Too many re-renders" infinite loop. Same fix: derive computed values in JSX, never `setState` in render.
 </details>
 
 ### Q11
@@ -426,6 +446,8 @@ struct Post: Codable { let title: String }
 ```
 
 Why: `try?` is appropriate only when you genuinely do not care which failure happened; for network calls, `do/catch` lets you tell the user *why* it failed.
+
+> **React/JS:** `try { ... } catch {}` with an empty catch is the exact same anti-pattern. Catch the error, store it in state, and render the message.
 </details>
 
 ### Q12
@@ -456,6 +478,8 @@ struct SettingsView: View {
 ```
 
 Why: `@AppStorage` is the SwiftUI wrapper around `UserDefaults` — it auto-saves on every change and re-renders when the underlying default changes, while still acting like `@State` for binding.
+
+> **React:** swap `useState(false)` for `useLocalStorage("darkMode", false)`. Same one-line refactor.
 </details>
 
 ### Q13
@@ -503,6 +527,8 @@ struct GuestList: View {
 ```
 
 Why: `ForEach`/`List` need stable, unique IDs to diff rows correctly, and `id: \.self` works only when values are guaranteed unique.
+
+> **React:** identical "Each child in a list should have a unique key prop" warning when two children share a key. Same fix.
 </details>
 
 ### Q14
@@ -548,6 +574,8 @@ final class WeatherVM: ObservableObject {
 ```
 
 Why: SwiftUI requires `@Published` mutations on the main actor; `@MainActor` plus `async` URLSession delivers the result on the main actor without any manual `DispatchQueue` hop.
+
+> **React/JS:** JS is single-threaded so the off-main-thread bug doesn't exist, but the modernization lesson is identical: replace callback-style XHR with `await fetch(...)`.
 </details>
 
 ### Q15
@@ -591,4 +619,6 @@ struct RootView: View {
 ```
 
 Why: `NavigationStack` plus `NavigationLink(_, value:)` and `.navigationDestination(for:)` separates *what to navigate to* from *how to render the destination*, unlocking deep linking and programmatic navigation.
+
+> **React/Next:** like upgrading from Pages router to App router — value-based destinations are the typed-route-segments equivalent.
 </details>

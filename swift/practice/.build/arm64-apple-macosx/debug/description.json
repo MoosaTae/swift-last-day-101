@@ -1,0 +1,714 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.xctest/Contents/MacOS/PracticeKitPackageTests",
+      "packagePath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice",
+      "productName" : "PracticeKitPackageTests"
+    }
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.PracticeKit-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/sources",
+      "importPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Item.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/ItemStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Phase.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/RemoteFetcher.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PracticeKit",
+      "moduleOutputPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKit.swiftmodule",
+      "objects" : [
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/Item.swift.o",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/ItemStore.swift.o",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/Phase.swift.o",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/RemoteFetcher.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/include/PracticeKit-Swift.h",
+        "-swift-version",
+        "6",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "practice"
+      ],
+      "outputFileMapPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/Item.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/ItemStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/Phase.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/RemoteFetcher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKit.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Item.swift",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/ItemStore.swift",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Phase.swift",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/RemoteFetcher.swift"
+      ],
+      "tempsPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.PracticeKitPackageTests-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/sources",
+      "importPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKitTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PracticeKitPackageTests",
+      "moduleOutputPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKitPackageTests.swiftmodule",
+      "objects" : [
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/include/PracticeKitPackageTests-Swift.h",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "practice"
+      ],
+      "outputFileMapPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKitPackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.PracticeKitTests-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/sources",
+      "importPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/ItemStoreTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/RemoteFetcherTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKit.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PracticeKitTests",
+      "moduleOutputPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKitTests.swiftmodule",
+      "objects" : [
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.swift.o",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "6",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "practice"
+      ],
+      "outputFileMapPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules/PracticeKitTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/ItemStoreTests.swift",
+        "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/RemoteFetcherTests.swift"
+      ],
+      "tempsPath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "PracticeKit" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PracticeKit",
+      "-package-name",
+      "practice",
+      "-c",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Item.swift",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/ItemStore.swift",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Phase.swift",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/RemoteFetcher.swift",
+      "-I",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/include/PracticeKit-Swift.h",
+      "-swift-version",
+      "6",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "practice",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "PracticeKitPackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PracticeKitPackageTests",
+      "-package-name",
+      "practice",
+      "-c",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift",
+      "-I",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/include/PracticeKitPackageTests-Swift.h",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "practice",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "PracticeKitTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PracticeKitTests",
+      "-package-name",
+      "practice",
+      "-c",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/ItemStoreTests.swift",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/RemoteFetcherTests.swift",
+      "-I",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "6",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "practice",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "PracticeKit" : [
+
+    ],
+    "PracticeKitPackageTests" : [
+      "PracticeKitTests",
+      "PracticeKit"
+    ],
+    "PracticeKitTests" : [
+      "PracticeKit"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+    "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift" : {
+      "inputs" : [
+
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift"
+        }
+      ]
+    }
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Item.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/ItemStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/Phase.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Sources/PracticeKit/RemoteFetcher.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/sources"
+    },
+    "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/sources"
+    },
+    "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/Item.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/ItemStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/Phase.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKit.build/RemoteFetcher.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/ItemStoreTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/RemoteFetcherTests.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitPackageTests.product/Objects.LinkFileList"
+    },
+    "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/ItemStoreTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/Tests/PracticeKitTests/RemoteFetcherTests.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/PracticeKitTests.build/sources"
+    },
+    "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/tae/chula/25/2/ios/final-exam/prep/swift/practice/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}
