@@ -18,16 +18,31 @@ more code - you need a mental model that lets you derive the code on the spot.
 That is it. Every layout bug, every "why is this not centred", every "why is my
 image gigantic" comes from misreading this three-step protocol.
 
-```
-   +---------------------------+
-   | Parent (e.g. VStack)      |
-   |   1. "you can be up to    |
-   |       W x H"              |
-   |   2. child replies        |
-   |       "I want w x h"      |
-   |   3. parent places child  |
-   |       at (x,y)            |
-   +---------------------------+
+```text
+            ┌───────────────────────────────────┐
+            │  PARENT (e.g. VStack, ZStack)     │
+            │  has bounds W × H                 │
+            └────────────────┬──────────────────┘
+                             │ STEP 1
+                  proposes:  │ "you may be up to W × H"
+                             ▼
+            ┌───────────────────────────────────┐
+            │  CHILD                            │
+            │  decides its own size             │
+            └─────┬───────────────────────┬─────┘
+                  │ STEP 2                │
+        intrinsic │                       │ greedy
+        (Text,    │                       │ (Spacer, Color,
+         Image)   ▼                       ▼ .frame(maxW:.inf))
+            "I want w × h"          "I take W × H"
+                  │                       │
+                  └───────────┬───────────┘
+                              │ STEP 3
+                              ▼
+            ┌───────────────────────────────────┐
+            │  PARENT positions child at (x,y)  │
+            │  using its own alignment rule     │
+            └───────────────────────────────────┘
 ```
 
 Three implications you must internalise:
@@ -208,16 +223,29 @@ Text("A").padding().background(Color.yellow)
 Text("A").background(Color.yellow).padding()
 ```
 
+Before:
+
+```swift
+Text("A").padding().background(Color.yellow)   // yellow ENGULFS the padding
 ```
-   .padding().background(Color.yellow)        .background(Color.yellow).padding()
-   +-----------------+                        +-----------------+
-   |yellow           |                        | (transparent)   |
-   |   +---------+   |                        |   +-------+     |
-   |   |   A     |   |                        |   |yellow |     |
-   |   +---------+   |                        |   |  A    |     |
-   +-----------------+                        |   +-------+     |
-                                              | (transparent)   |
-                                              +-----------------+
+
+After:
+
+```swift
+Text("A").background(Color.yellow).padding()   // yellow HUGS the text
+```
+
+```text
+   .padding().background(Color.yellow)     .background(Color.yellow).padding()
+   ┌─────────────────────────┐             ┌─────────────────────────┐
+   │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│             │                         │
+   │▓▓▓▓▓▓▓ padding ▓▓▓▓▓▓▓▓▓│             │      padding            │
+   │▓▓▓▓ ┌─────────────┐ ▓▓▓▓│             │   ┌─────────────┐       │
+   │▓▓▓▓ │     A       │ ▓▓▓▓│             │   │▓▓▓▓ A ▓▓▓▓▓▓│       │
+   │▓▓▓▓ └─────────────┘ ▓▓▓▓│             │   └─────────────┘       │
+   │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│             │      padding            │
+   └─────────────────────────┘             └─────────────────────────┘
+   yellow rect = text + padding            yellow rect = text only
 ```
 
 Same logic with `.frame` and `.cornerRadius`:
@@ -467,6 +495,29 @@ Text("Hi")
 
 ### 5.5 The alignment table to memorise
 
+Four-quadrant visual reference — same word "alignment", four different jobs:
+
+```text
+   VStack(alignment: .leading)            HStack(alignment: .top)
+   ┌──────────────────────┐               ┌──────────────────────┐
+   │ A                    │               │ ┌──┐ ┌────┐ ┌──┐     │
+   │ BB                   │               │ │99│ │pts │ │!!│     │
+   │ CCC                  │               │ └──┘ └────┘ └──┘     │
+   │ left edges line up   │               │ tops line up         │
+   └──────────────────────┘               └──────────────────────┘
+   horizontal edges of children            vertical edges of children
+
+   ZStack(alignment: .topTrailing)         .frame(maxW:.inf, alignment:.leading)
+   ┌──────────────────────┐               ┌──────────────────────┐
+   │              ┌────┐  │               │ Hi                   │
+   │  back        │NEW │  │               │                      │
+   │  layer       └────┘  │               │ original content     │
+   │                      │               │ pinned to leading    │
+   │  fills ZStack        │               │ inside the new frame │
+   └──────────────────────┘               └──────────────────────┘
+   2D point of SMALLER children            content inside resized frame
+```
+
 | Where you write it | What it aligns | Default |
 | --- | --- | --- |
 | `VStack(alignment: x)` | horizontal edges of children | `.center` |
@@ -480,6 +531,31 @@ Text("Hi")
 ## 6. View decomposition walkthrough
 
 > **Priority:** DRILL — wireframe-to-SwiftUI is a graded written category.
+
+### Decision tree — wireframe to SwiftUI
+
+```text
+WHOLE wireframe
+├── Overlapping layers? (image with badge on top, full-bleed bg)
+│   ├── YES ──► ZStack outermost (back-to-front)
+│   │           └── alignment: where do the smaller layers pin?
+│   └── NO  ──► VStack outermost (rows top to bottom)
+│
+├── For EACH row:
+│   ├── Single leaf? (just Text or Image) ──► no HStack needed
+│   └── Side-by-side items? ──► HStack
+│       ├── Stacked text inside? ──► nested VStack(alignment: .leading)
+│       └── Need to push to an edge?
+│           ├── push right    ──► Text; Spacer(); Text
+│           ├── push apart    ──► A; Spacer(); B
+│           └── centre one    ──► Spacer(); X; Spacer()
+│
+└── Modifiers (apply in this order):
+    ├── per-element first     ──► .font, .foregroundStyle, .resizable
+    ├── then container shape  ──► .padding, .frame(maxWidth:.inf)
+    ├── then paint            ──► .background
+    └── finally crop/round    ──► .cornerRadius, .clipShape
+```
 
 ### The recipe (memorise the steps, not the code)
 
@@ -636,14 +712,55 @@ HStack(spacing: 12) {
 
 ### Worked wireframe D - ZStack overlay card (from hw/3 TravelPackage)
 
+Final composition:
+
+```text
+   ┌───────────────────────────────┐
+   │░░░░░░░░░░░░░░░░░░░░░ ┌─────┐ │
+   │░░░░░░░░░░░░░░░░░░░░░ │ 20  │ │
+   │░░░░░ mountain ░░░░░░ │ Nov │ │
+   │░░░░░  image   ░░░░░░ └─────┘ │
+   │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+   │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+   │ Mountain                     │
+   │ $$$$$$                       │
+   └───────────────────────────────┘
 ```
-+-----------------------+
-|  IMAGE         [20  ] |
-|                [Nov ] |
-|                       |
-|  Mountain             |
-|  $$$$$$               |
-+-----------------------+
+
+Layer 0 — back image (full bleed):
+
+```text
+   ┌───────────────────────────────┐
+   │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+   │░░░░░░ Image("mountain") ░░░░ │
+   │░░░░░  .resizable           ░ │
+   │░░░░░  .frame(320×320)      ░ │
+   │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+   └───────────────────────────────┘
+```
+
+Layer 1 — date badge (.topTrailing):
+
+```text
+   ┌───────────────────────────────┐
+   │                      ┌─────┐ │
+   │  ZStack alignment    │ 20  │ │
+   │  pins this layer     │ Nov │ │
+   │  to top-right        └─────┘ │
+   │                              │
+   └───────────────────────────────┘
+```
+
+Layer 2 — title (.bottomLeading via Spacer trick):
+
+```text
+   ┌───────────────────────────────┐
+   │                              │
+   │  inner VStack { Spacer();    │
+   │    HStack { col; Spacer() }} │
+   │ Mountain                     │
+   │ $$$$$$                       │
+   └───────────────────────────────┘
 ```
 
 Decomposition:
@@ -736,6 +853,28 @@ equally. Without it, both cards would shrink to text width and clump centre.
 ## 7. Common pitfalls (graders look for these)
 
 > **Priority:** DRILL — section name says it: graders look for these.
+
+Severity index — scan this before you write any wireframe answer:
+
+| Tag | Pitfall | Why it stings |
+| --- | --- | --- |
+| [GRADED] | `.padding()` vs `.background()` order | Wrong order = wrong rectangle painted; instantly visible to grader |
+| [GRADED] | `.cornerRadius` written before `.background` | Background re-paints square corners on top; rounded look disappears |
+| [GRADED] | Forgot `.resizable()` on asset `Image` | `.frame` cannot shrink a raw bitmap; image overflows the layout |
+| [GRADED] | Missing `Spacer()` when pushing to an edge | HStack centres its content; "Right" is not actually on the right |
+| [WATCH]  | `.frame(maxWidth: .infinity)` without `alignment:` | Wrapper is greedy but content stays centred — common "why isn't my Text on the left?" |
+| [WATCH]  | ZStack alignment ignored by greedy child | Child fills the ZStack and has nowhere to align to; needs Spacer trick or `.frame` alignment |
+| [INFO]   | `Spacer()` in the wrong-axis stack | Spacer pushes along its parent stack's axis only — VStack-Spacer pushes vertical, not horizontal |
+
+```text
+THREE RULES TO REPEAT UNDER YOUR BREATH
+
+  1. The first modifier is closest to the content.
+  2. ZStack alignment ignores greedy children — wrap the child in
+     Spacer/Spacer or .frame(maxW:.inf, maxH:.inf, alignment:) first.
+  3. .frame(maxWidth: .infinity) does NOT centre or pin the content;
+     it just makes the WRAPPER greedy. Add alignment: to place it.
+```
 
 ### 7.1 Forgot `.resizable()` on an asset Image
 

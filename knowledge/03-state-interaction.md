@@ -4,9 +4,24 @@ Final exam prep — Class 3 (Interactions) + Class 10 (MVVM/Observation) + HW4-6
 
 ## 1. Mental model
 
-```
-Action  --update-->  State  --re-render-->  View
-(tap, edit)         (@State)              (body recomputed)
+```text
+        ┌────────────┐  tap / edit / focus
+        │   Action   │◄──────────────────┐
+        └─────┬──────┘                   │
+              │ writes                   │
+              ▼                          │
+   ┌─────────────────────┐               │
+   │   State storage     │   (lives outside the struct,
+   │   @State / model    │    survives re-creation)
+   └─────────┬───────────┘               │
+             │ invalidates dependents    │
+             ▼                           │
+   ┌─────────────────────┐  diff + draw  │
+   │  body recomputed    │──────────────►│
+   │  (View struct new)  │   pixels      │
+   └─────────────────────┘               │
+                                          (user sees update,
+                                           cycle repeats)
 ```
 
 - View is a `struct` (value type). Cannot mutate stored properties directly.
@@ -26,6 +41,24 @@ Action  --update-->  State  --re-render-->  View
 | `@Bindable`    | No         | inside View, on `@Observable`  | Bindings to model properties from a child |
 | `@Environment` | No         | inside View                    | Read system values (`\.dismiss`, `\.colorScheme`) **or** an `@Observable` injected via `.environment(model)` |
 | `@FocusState`  | Yes (View) | inside View struct             | Track which TextField is focused        |
+
+```text
+   Parent View          Child View          External Storage
+   (creator)            (receiver)          (model / system)
+       │                    │                      │
+@State ●────owns──────────────────────────────────►│ value box
+       │                    │                      │
+@Binding ─── $x ───────────►● reads & writes ─────►│ same box (proxy)
+       │                    │                      │
+@Observable ●─ init(model) ►● plain var or          │ class instance
+       │                @Bindable for $store.x ────►│ (property-tracked)
+       │                    │                      │
+@Environment(M.self) ◄───── pulled by type ◄─ .environment(m) at root
+       │                    │                      │
+@FocusState ●───── $focus ───────► .focused(...)   │ keyboard target
+       │                    │                      │
+@Environment(\.dismiss) ◄── system value (read-only)
+```
 
 ### Legacy (still works, exam may show either)
 
@@ -175,9 +208,15 @@ Two equivalent stacks for "external reference-type model with auto re-render":
 
 ## 8. `@State` vs `@Observable`
 
-- View-local UI flag (sheet shown, draft text, tab index) -> `@State`.
-- Multi-property domain data with logic -> `@Observable` class.
-- Inject same instance into many views -> `@Observable` + pass directly or `@Environment`.
+| Wrapper | Owner | Direction | Use when |
+|---|---|---|---|
+| `@State` (value) | this view | owns, read+write locally | UI flag, draft text, counter |
+| `@State` (`@Observable`) | this view | owns class instance for life of view | view *creates* the model |
+| `@Binding` | parent (proxy) | child reads + writes parent storage | row toggles, numpad button |
+| `@Bindable` | upstream | child needs `$store.x` for TextField | child got `@Observable` from parent |
+| `@Environment(M.self)` | ancestor | descendant reads injected model | model used across many screens |
+| `@Environment(\.key)` | system | read-only system value | `dismiss`, `colorScheme`, `scenePhase` |
+| `@FocusState` | this view | owns focus identity | which field has the keyboard |
 
 ## 9. Counter
 
@@ -345,18 +384,16 @@ struct GameView: View {
 
 ## 13. Output-Prediction Gotchas
 
-1. State default `= 0` runs once. The View struct may be recreated many times, but `@State` storage survives. `print` inside struct `init` fires repeatedly; value is NOT reset.
-2. Mutating non-wrapped `var` from `body` -> compile error.
-3. `let isOn = false; Toggle(...isOn: $isOn)` -> error: `$` needs a wrapper.
-4. Missing `$` on `TextField(text:)`/`Toggle(isOn:)` -> type error.
-5. State change recomputes the whole `body`; children re-render only if inputs differ. No side effects in `body`.
-6. Tap order: action body runs first (`tap 1`), then re-render (`render 1`).
-7. Multiple `@State` are independent.
-8. iOS 17 `onChange(of:) { old, new in }`; old single-arg deprecated.
-9. Mutating state from background thread is undefined; use `MainActor`.
-10. `@Binding` in `#Preview` -> `.constant(value)`.
-11. `@State` on a plain class (no `@Observable`) does NOT trigger re-render.
-12. `Picker` tag type must exactly match selection type; mismatch -> selection silently broken.
+| Severity | Gotcha | What goes wrong |
+|---|---|---|
+| HIGH | Mutating `@State` inside `body` (no event) | Re-render schedules another mutation → infinite loop / runtime warning |
+| HIGH | Re-creating an `@Observable`/`@StateObject` from a `let` in a parent re-render | Owner isn't `@State` so model is rebuilt → all in-memory state lost |
+| HIGH | Passing `value` instead of `$value` to a `@Binding` parameter | Type mismatch or no write-back; child edits don't reach parent |
+| HIGH | Reading `@Bindable` without first holding the model in a property | `$store.x` unavailable; TextField binding silently does nothing |
+| MED | Mutating `@State` from a closure that captures `self` (struct) by value | Write hits a copy, not the live storage; UI never updates |
+| MED | `@Observable` mutated off the main thread | Purple warnings, dropped/late re-renders; wrap in `@MainActor` |
+| LOW | `.onChange(of:)` on a value type fires only on whole-value change | Nested struct field edits via `$` may not re-trigger as expected |
+| LOW | `@Environment(\.dismiss)` invoked from `init`/`body` | Dismisses immediately on appear; only call from an action closure |
 
 ## 14. Drill checklist
 

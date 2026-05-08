@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type Fuse from 'fuse.js';
 import type { FuseResultMatch } from 'fuse.js';
+import AskPanel, { type AskPanelHandle } from './AskPanel';
 
 interface SearchEntry {
   section: 'knowledge' | 'learn' | 'mock';
@@ -44,6 +45,10 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef(false);
+  const askRef = useRef<AskPanelHandle | null>(null);
+
+  const askMode = query === '/a' || query.startsWith('/a ');
+  const askPrompt = askMode ? query.slice(2).trimStart() : '';
 
   const ensureLoaded = useCallback(async () => {
     if (loaded || loadingRef.current) return;
@@ -119,6 +124,16 @@ export default function CommandPalette() {
   }, []);
 
   function onInputKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (askMode) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (askPrompt) {
+          askRef.current?.submit(askPrompt);
+          setQuery('/a ');
+        }
+      }
+      return;
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelected(i => Math.min(i + 1, Math.max(0, results.length - 1)));
@@ -144,13 +159,17 @@ export default function CommandPalette() {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden />
       <div className="relative w-full max-w-xl rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden">
         <div className="flex items-center gap-3 border-b border-zinc-800 px-4">
-          <span className="text-zinc-500 text-sm">Search</span>
+          <span className={`text-sm ${askMode ? 'text-violet-400' : 'text-zinc-500'}`}>{askMode ? 'Ask' : 'Search'}</span>
           <input
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onInputKey}
-            placeholder={loaded ? `Search ${loaded.entries.length} pages...` : 'Loading index...'}
+            placeholder={askMode
+              ? 'Ask Claude (full tools, edits files in repo)...'
+              : loaded
+                ? `Search ${loaded.entries.length} pages...`
+                : 'Loading index...'}
             className="flex-1 bg-transparent py-3 text-zinc-100 placeholder-zinc-600 outline-none text-sm"
             autoComplete="off"
             spellCheck={false}
@@ -158,6 +177,9 @@ export default function CommandPalette() {
           <kbd className="text-[10px] text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5">Esc</kbd>
         </div>
 
+        {askMode ? (
+          <AskPanel ref={askRef} draft={askPrompt} />
+        ) : (
         <div ref={listRef} className="max-h-[50vh] overflow-y-auto">
           {loadError && (
             <div className="px-4 py-6 text-sm text-rose-400">Failed to load search index: {loadError}</div>
@@ -211,13 +233,23 @@ export default function CommandPalette() {
             );
           })}
         </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 border-t border-zinc-800 px-4 py-2 text-[11px] text-zinc-500">
           <div className="flex items-center gap-3">
-            <span><kbd className="rounded border border-zinc-700 px-1">↑</kbd> <kbd className="rounded border border-zinc-700 px-1">↓</kbd> navigate</span>
-            <span><kbd className="rounded border border-zinc-700 px-1">↵</kbd> open</span>
+            {askMode ? (
+              <>
+                <span><kbd className="rounded border border-zinc-700 px-1">↵</kbd> ask</span>
+                <span className="text-zinc-600">edits files in repo · <code className="text-violet-400">/a</code> mode</span>
+              </>
+            ) : (
+              <>
+                <span><kbd className="rounded border border-zinc-700 px-1">↑</kbd> <kbd className="rounded border border-zinc-700 px-1">↓</kbd> navigate</span>
+                <span><kbd className="rounded border border-zinc-700 px-1">↵</kbd> open</span>
+              </>
+            )}
           </div>
-          <span>{loaded ? `${results.length} result${results.length === 1 ? '' : 's'}` : ''}</span>
+          <span>{askMode ? '' : loaded ? `${results.length} result${results.length === 1 ? '' : 's'}` : ''}</span>
         </div>
       </div>
     </div>

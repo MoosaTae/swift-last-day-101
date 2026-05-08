@@ -16,14 +16,16 @@ Topics 01–05 follow class slides: Swift basics, SwiftUI layout, State & intera
 ## Repository layout
 
 ```
-exercise/    Q&A flashcard markdown (source for the drill site)
-knowledge/   concise reference notes per topic (01–05)
-learn/       longer walkthrough notes per topic (01–05)
+exercise/    Q&A flashcard markdown (source for the drill site, slugs 01–08)
+knowledge/   concise reference notes per topic (slugs 01–05)
+learn/       longer walkthrough notes per topic (slugs 01–05)
+mock/        full mock exams — paper + answers + practical brief + rubric (slugs 01–20)
 site/        Astro + React + Tailwind app that renders all of the above
 swift/       Xcode playground + Swift Playgrounds iOS app for hands-on practice
+index.html   legacy standalone study guide (predates the site/, uses Tailwind CDN, not deployed)
 ```
 
-Three content directories drive the site; the site is generated, never hand-edited under `site/src/data/`.
+Four content directories drive the site (`exercise/`, `knowledge/`, `learn/`, `mock/`); the site is generated, never hand-edited under `site/src/data/`.
 
 ## site/ — the drill app
 
@@ -44,7 +46,7 @@ Package manager is **pnpm** (lockfile: `pnpm-lock.yaml`). Don't run `npm install
 ### Build pipeline
 
 - `scripts/build-cards.mjs` reads `../exercise/exercises-NN-*.md` → writes `src/data/cards.json`. It splits on `## Section X` headers, then on `### Q1` / `### A1` style headers, and pairs the prompt markdown with the markdown inside `<details><summary>Answer</summary>…</details>`. Code blocks are pre-rendered with highlight.js. **A card without a `<details>` block is silently dropped.**
-- `scripts/build-pages.mjs` reads `../knowledge/NN-*.md` and `../learn/NN-*.md` → writes `src/data/pages.json` keyed by 2-digit slug. Only slugs present in its `TOPIC_LABEL` map (`01`–`05`) are emitted; topics 06–08 are exercise-only.
+- `scripts/build-pages.mjs` reads `../knowledge/NN-*.md`, `../learn/NN-*.md`, and `../mock/NN-*.md` → writes `src/data/pages.json` shaped as `{ knowledge: { NN: { title, html } }, learn: {...}, mock: {...} }`. Each section has its own `TOPIC_LABEL` map: knowledge/learn cover slugs `01`–`05`, mock covers `01`–`20` (5 mock papers × 4 files each: written paper / written answers / practical brief / practical rubric). Files whose slug isn't in the map are silently skipped — adding new content means updating the map first.
 - `scripts/build-search.mjs` reads the just-built `src/data/pages.json`, strips HTML to plain text, and writes `public/search-index.json` (one entry per knowledge/learn/mock page) — consumed by the Cmd+K palette via `fetch('/search-index.json')` on first open. Must run after `build-pages.mjs`.
 - Topic code → label mapping is duplicated in `build-cards.mjs`, `build-pages.mjs`, and `DrillDeck.tsx` (`TOPIC_SHORT`). Keep all three in sync when adding a topic.
 
@@ -53,7 +55,9 @@ Package manager is **pnpm** (lockfile: `pnpm-lock.yaml`). Don't run `npm install
 - `/` — `DrillDeck` (active-recall flashcards from `cards.json`, hide-by-default, persists progress + topic filters in `localStorage` under `drill-progress-v1` / `drill-filters-v1`). Keyboard: Space reveal/next, J prev, K next, 1 got, 2 review, S shuffle.
 - `/knowledge/` and `/knowledge/[slug]` — rendered from `pages.json.knowledge`
 - `/learn/` and `/learn/[slug]` — rendered from `pages.json.learn`
-- The sidebar (`src/layouts/Sidebar.astro`) is the global shell; pages opt in by wrapping their body in `<Sidebar title=… active=…>`. It also mounts `<CommandPalette client:load />` so Cmd/Ctrl+K opens a Fuse.js fuzzy search across all knowledge/learn/mock pages on every route.
+- `/mock/` and `/mock/[slug]` — rendered from `pages.json.mock`
+- All three content routes use the same one-liner shape: `getStaticPaths()` reads `pages.json[<section>]`, then the body is `<article class="card-md" set:html={page.html}></article>`. There is no runtime markdown parsing — `marked` and `highlight.js` only run during the Node prebuild.
+- The sidebar (`src/layouts/Sidebar.astro`) is the global shell; pages opt in by wrapping their body in `<Sidebar title=… active=…>`. It also mounts `<CommandPalette client:load />` so Cmd/Ctrl+K opens a Fuse.js fuzzy search across all knowledge/learn/mock pages on every route. The palette lazy-loads Fuse + `/search-index.json` on first open.
 
 ## Authoring content
 
@@ -76,14 +80,15 @@ Filename must match `^exercises-(\d{2})-.*\.md$` where `NN ∈ {01..08}`. Inside
 
 Card id is `NN-<sectionLetter>-<questionId>` (e.g. `01-A-Q3`). Question id can be `Q1` or `A1` (any single letter + digits). The summary text is stripped — don't put answer content in `<summary>`.
 
-### Knowledge / Learn pages
+### Knowledge / Learn / Mock pages
 
-Filename must match `^(\d{2})-.*\.md$` with `NN ∈ {01..05}`. Plain markdown, rendered with `marked` + highlight.js. Empty files render as `<p>(empty)</p>` rather than failing the build.
+Filename must match `^(\d{2})-.*\.md$`. Valid slug ranges are `01`–`05` for `knowledge/` and `learn/`, `01`–`20` for `mock/`. Plain markdown, rendered with `marked` + highlight.js. Empty files render as `<p>(empty)</p>` rather than failing the build. Mock files come in groups of four — `01..04` are Mock 1 (written paper / written answers / practical brief / practical rubric), `05..08` are Mock 2, etc.; the human-readable label per slug lives in `build-pages.mjs`'s `TOPIC_LABEL.mock` map.
 
 ## swift/ — hands-on practice
 
 - `playground.playground` — open `playground.xcworkspace` in Xcode for a scratch Swift REPL (`Contents.swift`).
 - `prepare.swiftpm` — Swift Playgrounds iOS app project (iOS 16+, Swift 6). Open in Swift Playgrounds or Xcode. `MyApp.swift` is the `@main` entry, `ContentView.swift` is the root view.
+- `practice/` — additional scratch projects for hands-on drills.
 
 There is no shared build/test runner across `swift/` — each subproject is opened in its native tool.
 

@@ -47,6 +47,19 @@ Both scroll. They are not interchangeable.
 
 **Why both exist**: `ScrollView` is a dumb scrolling box - you put anything in it, you control the look. `List` is a smart scrolling table - it gives you free row chrome (separators, insets, swipe-to-delete, EditButton) and **lazily** recycles rows so a 10,000-row list doesn't melt your phone.
 
+```text
+Frame 0 (view appears)              Frame 1 (user scrolls down)
+ScrollView+VStack                    ScrollView+VStack
+┌─────────────────────────┐          ┌─────────────────────────┐
+│ Row 0..9999  ALL built  │          │ Row 0..9999 still alive │   memory: high
+└─────────────────────────┘          └─────────────────────────┘
+List                                 List
+┌─────────────────────────┐          ┌─────────────────────────┐
+│ Row 0..12   built       │          │ Row 8..20  built        │   memory: flat
+│ Row 13..9999 ░ deferred │          │ Row 0..7   recycled  ✓  │
+└─────────────────────────┘          └─────────────────────────┘
+```
+
 | | ScrollView + VStack/ForEach | List |
 |---|---|---|
 | Style | Plain content; you control look | Built-in row chrome, separators, swipe actions |
@@ -145,6 +158,31 @@ Students conflate these. They look similar, both involve "uniqueness," and types
 | `Identifiable` | "Which row is this in a list?" (stable identity across renders) | `List(items)`, `ForEach(items)` |
 | `Hashable` | "Are these two values equal? Hash them into a dictionary key." | `NavigationLink(value:)` + `.navigationDestination(for:)`, `Set`, `Dictionary` |
 
+```text
+       Identifiable-only                      Hashable-only
+   ┌───────────────────────┐            ┌───────────────────────┐
+   │ List(items)           │            │ NavigationLink(       │
+   │   without id:\.self   │            │   value: x)           │
+   │ ForEach(items)        │   ┌────────┤ Set<T>, [T:V] keys    │
+   │ row diffing only      │   │ both   │ id:\.self on a value  │
+   │                       │   │        │                       │
+   │                  ┌────┴───┴────┐   │                       │
+   │                  │ the normal  │   │                       │
+   │                  │ case: model │   │                       │
+   │                  │ in a list   │   │                       │
+   │                  │ AND pushed  │   │                       │
+   │                  │ via value:  │   │                       │
+   │                  └─────────────┘   │                       │
+   └───────────────────────┘            └───────────────────────┘
+```
+
+| Symptom | Likely missing | Fix |
+|---|---|---|
+| `List(items)` won't compile | `Identifiable` on the model | add `id: UUID` and conform |
+| `NavigationLink(value: x)` won't compile | `Hashable` on the value type | conform to `Hashable` |
+| `.navigationDestination(for: T.self)` won't fire | mismatched type | push value of exact `T` |
+| Crashing dictionary key | `Hashable` missing on key type | conform |
+
 `Identifiable` is about UI diffing. `Hashable` is about value-based navigation routing.
 
 ```swift
@@ -189,6 +227,20 @@ If you write `NavigationView` in this exam, expect points off. The course is iOS
 
 ### The four ways to push a screen
 
+```text
+  data flow for value-based push
+  user tap ──▶ NavigationLink(value: x)
+                     │
+                     ▼
+              SwiftUI looks up type(x) in registry
+                     │
+                     ▼
+              .navigationDestination(for: T.self) { v in DetailView(v) }
+                     │
+                     ▼
+              build DetailView(x) lazily ──▶ push
+```
+
 #### a) Closure-based push (eager)
 
 ```swift
@@ -224,34 +276,27 @@ This is also why the value must be `Hashable`: SwiftUI uses it as a lookup key.
 
 THIS is the rule the slides bury. **`.navigationDestination(for:)` must be attached to a view inside the `NavigationStack` root** - typically the List or root content. Putting it on the destination, or outside the stack, silently does nothing or crashes at runtime.
 
+```text
+┌─── NavigationStack (root) ──────────────────────┐
+│                                                 │
+│   List { ... }                                  │
+│     .navigationDestination(for: Item.self) ✓    │   inside stack: registers
+│     .navigationDestination(for: User.self) ✓    │   different types coexist
+│                                                 │
+│   Pushed children render above this layer;      │
+│   they reuse the registry.                      │
+│                                                 │
+└─────────────────────────────────────────────────┘
+   .navigationDestination(for: Item.self) ✗          outside: never fires
 ```
-NavigationStack {                  <-- the stack
-    List { ... }                   <-- root content
-        .navigationDestination(for: Item.self) { ... }   <-- HERE. correct.
-}
-.navigationDestination(for: Item.self) { ... }           <-- wrong. outside stack.
 
-NavigationStack {
-    List { ... }
-}
-.navigationDestination(for: Item.self) { ... }           <-- still outside. wrong.
-```
+Severity-tagged checklist:
 
-Visual model:
-
-```
-+--- NavigationStack (root) ----------------------+
-|                                                 |
-|  Root content (List, VStack, ...)               |
-|     |                                           |
-|     +-- .navigationDestination(for: T.self)     |  <-- attach here
-|     +-- .navigationDestination(for: U.self)     |
-|                                                 |
-|  Pushed children appear above this layer.       |
-|  They DON'T need their own navigationDestination|
-|  unless they push further values.               |
-+-------------------------------------------------+
-```
+- [PLACEMENT-OK] Attached to root content INSIDE `NavigationStack { ... }`.
+- [LAZY-OK] Registered once per type at root; destinations build only on tap.
+- [DUPLICATE-OK] Multiple `.navigationDestination(for:)` for DIFFERENT types coexist fine.
+- [SILENT-FAIL] Attached AFTER the closing `}` of NavigationStack — modifier exists but never fires.
+- [RUNTIME-BLANK] `path.append(x)` of a type with no matching registration — pushes a blank screen, no crash, no console warning.
 
 Rule of thumb: declare all type -> view mappings once, near the root. Pushed children just call `NavigationLink(value:)` and the registry handles the rest.
 
@@ -533,6 +578,28 @@ TabView(selection: $currentTab) {
 
 ### Example 1 - List of strings + closure-based push
 
+```text
+┌─ Fruits ─────────────────┐
+│ Apple              ▶     │
+│ ──────────────────────── │
+│ Banana             ▶     │
+│ ──────────────────────── │
+│ Cherry             ▶     │
+│                          │
+│                          │
+└──────────────────────────┘
+```
+
+Component tree:
+
+```text
+NavigationStack
+└── List(fruits, id: \.self)
+    └── ForEach (implicit)
+        └── NavigationLink (closure)
+            └── Text("Detail: ...")
+```
+
 The simplest possible navigation app.
 
 ```swift
@@ -554,6 +621,28 @@ struct ContentView: View {
 When to write it this way: tiny lists, prototypes, or when the destination is so trivial that lazy construction doesn't matter.
 
 ### Example 2 - Identifiable struct + value-based navigationDestination
+
+```text
+┌─ Countries ──────────────┐    ┌─ Japan ──────────────────┐
+│ TH  Thai           ▶     │    │                          │
+│ ──────────────────────── │ ▶  │          JP              │
+│ JP  Japan          ▶     │    │                          │
+│                          │    │       Japan              │
+│                          │    │                          │
+└──────────────────────────┘    └──────────────────────────┘
+```
+
+Component tree:
+
+```text
+NavigationStack
+└── List(countries)
+    ├── ForEach (implicit, Identifiable)
+    │   └── NavigationLink(value: Country)
+    │       └── HStack { Text(flag); Text(name) }
+    └── .navigationDestination(for: Country.self)
+        └── VStack { Text(flag); Text(name) }
+```
 
 The pattern you should use by default.
 
@@ -593,6 +682,32 @@ struct CountryList: View {
 Trace through it: user taps a row -> `NavigationLink(value: c)` fires -> SwiftUI looks up `Country.self` in the destination registry -> builds the destination view lazily with `c` -> pushes it.
 
 ### Example 3 - Editable list with onDelete + Add via sheet
+
+```text
+┌─ Tasks ──────────── [+] ─┐    ┌─ New Task ──────────────┐
+│ Edit                     │    │ Cancel          Save    │
+│ ──────────────────────── │    │ ─────────────────────── │
+│ Buy milk           ◄ del │ ▲  │ Title: [_____________]  │
+│ ──────────────────────── │ │  │                         │
+│ Run                ◄ del │ │  │      (sheet slides up)  │
+│                          │ │  │                         │
+└──────────────────────────┘    └─────────────────────────┘
+```
+
+Component tree:
+
+```text
+NavigationStack
+└── List
+    ├── ForEach(tasks)
+    │   ├── Text(title)
+    │   ├── .onDelete
+    │   └── .onMove
+    ├── .toolbar { EditButton; Button(+) }
+    └── .sheet(isPresented: $showAdd)
+        └── NavigationStack
+            └── Form { TextField } + toolbar(Save/Cancel)
+```
 
 A real exam-shaped problem: list, swipe-to-delete, reorder, plus button opens a sheet to add new.
 

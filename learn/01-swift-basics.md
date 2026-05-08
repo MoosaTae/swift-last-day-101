@@ -78,14 +78,17 @@ This is exam-bait. If both sides of `/` are `Int`, the result is `Int`.
 
 In most languages, any reference can secretly be `null`, and you find out at runtime via a crash. Swift makes "might be missing" part of the **type**: `String` can never be nil, `String?` might be. The compiler refuses to let you use the inside of the box until you've explicitly opened it.
 
-```
-   String        String?
-   +---+         +----------+
-   |"hi"         | Some("hi")|     <- "the box has a value"
-   +---+         +----------+
-                 +----------+
-                 |   None   |     <- "the box is empty" (nil)
-                 +----------+
+```text
+    String                        String?
+  ┌────────┐                  ┌──────────────────────┐
+  │  "hi"  │                  │   ┌──────────────┐   │
+  └────────┘                  │   │ .some("hi")  │   │  has a value
+  always a value              │   └──────────────┘   │
+  compiler trusts you         │   ┌──────────────┐   │
+                              │   │    .none     │   │  empty (nil)
+                              │   └──────────────┘   │
+                              └──────────────────────┘
+                              must be opened before use
 ```
 
 ### Declaring and inspecting
@@ -102,18 +105,14 @@ print(s!)       // hi               <- forcibly opens the box; CRASH if nil
 
 You have five ways to deal with an optional. Memorize them as a decision tree.
 
-```
-Need the value?
-|
-+-- Yes, and have a fallback.        ->  ??       (nil-coalescing)
-|
-+-- Yes, conditionally do something. ->  if let   (scoped to true branch)
-|
-+-- Yes, or bail out of function.    ->  guard let (continues in main flow)
-|
-+-- Just want to chain a method.     ->  ?.       (optional chaining)
-|
-+-- I'm 100% sure it's not nil.      ->  !        (avoid; usually a bug)
+```text
+Need the value of an Optional<T>?
+│
+├── have a fallback value                  ──►  ??         result: T
+├── conditional work, value scoped local   ──►  if let     result: T inside {}
+├── required value, else exit the function ──►  guard let  result: T after else
+├── just want to chain a method            ──►  ?.         result: U?
+└── 100% certain not nil (rarely true)     ──►  !          result: T or CRASH
 ```
 
 ```swift
@@ -445,30 +444,19 @@ if let r = minMax([3, 1, 4, 1, 5]) {
 
 ### The memory model (this is the core idea)
 
-```
-STRUCT (value type)                 CLASS (reference type)
+```text
+                STRUCT (value, stack)            CLASS (reference, heap)
 
-var s1 = S(n: 0)                    let c1 = C(n: 0)
-+--------+                          +--------+         +-----------+
-|  s1    |--> [n: 0]                |  c1    |-------> | heap obj  |
-+--------+                          +--------+         | n: 0      |
-                                                       +-----------+
+ var x1 = X()   x1 ─► [n:0]                      x1 ──┐
+                                                       ├─► heap{ n:0 }
+ var x2 = x1    x1 ─► [n:0]   COPY                x1 ──┤
+                x2 ─► [n:0]   independent         x2 ──┘   pointer copied
 
-var s2 = s1     // COPY            let c2 = c1     // copy POINTER
-+--------+                          +--------+
-|  s1    |--> [n: 0]                |  c1    |---+
-+--------+                          +--------+   |
-+--------+                          +--------+   +--> [ heap obj ]
-|  s2    |--> [n: 0]                |  c2    |---+      n: 0
-+--------+                          +--------+
+ x2.n = 5       x1 ─► [n:0]   untouched           x1 ──┐
+                x2 ─► [n:5]                             ├─► heap{ n:5 }
+                                                  x2 ──┘   BOTH see it
 
-s2.n = 5                            c2.n = 5
-+--------+                          +--------+
-|  s1    |--> [n: 0]  (untouched)   |  c1    |---+
-+--------+                          +--------+   +--> [ heap obj ]
-+--------+                          +--------+   |       n: 5
-|  s2    |--> [n: 5]                |  c2    |---+    (BOTH see it)
-+--------+                          +--------+
+ result         s1.n=0  s2.n=5                    c1.n=5  c2.n=5
 ```
 
 ### Code
@@ -553,6 +541,17 @@ This is how `Optional` itself is implemented under the hood: `enum Optional<T> {
 ## 11. Output Prediction Practice
 
 > **Priority:** DRILL — directly mirrors written-exam Output Prediction items.
+
+| Snippet | Trap mechanism                      | If you miss this, review |
+| ------- | ----------------------------------- | ------------------------ |
+| 1       | print shows the box, not the value  | section 2 (optionals)    |
+| 2       | Int / Int truncates                 | section 1 (inference)    |
+| 3       | value vs reference on assignment    | section 9 (struct/class) |
+| 4       | closure captures by reference       | section 7 (closures)     |
+| 5       | filter -> map -> reduce pipeline    | section 5 (collections)  |
+| 6       | dict subscript is always Optional   | section 5 (collections)  |
+| 7       | half-open vs closed range           | section 6 (control flow) |
+| 8       | Optional in string interpolation    | section 4 (string<->int) |
 
 These are calibrated to the exam style. Cover the right column, predict, then check.
 
@@ -810,20 +809,20 @@ The lesson: pick the data type that matches your sharing model. Don't fight valu
 
 These trip students up because the code *compiles* and the bug only appears at runtime or in surprising output.
 
-| Pitfall                                       | Why it trips students                                                       |
-| --------------------------------------------- | --------------------------------------------------------------------------- |
-| `print(optional)` showing `Optional("hi")`    | Compiles fine, only the *output* is wrong. Always unwrap before print.      |
-| `dict[k]!` when key exists at runtime         | Compiler can't prove key exists; subscript is `V?` regardless.              |
-| `Int / Int` truncating                        | `5 / 2 == 2`, not `2.5`. Promote one side to `Double` before dividing.      |
-| `let c = ClassInstance(); c.prop = ...`       | Works! `let` only freezes the pointer, not the object's `var` properties.   |
-| Struct passed to function and mutated         | Mutation is on a copy; caller is unaffected. Use `inout` or return new value.|
-| Closure capturing a mutating var              | Sees the latest value, not the value at closure creation.                   |
-| `if let x = x` and using `x` outside the `if` | `if let` only binds inside the block. Use `guard let` for outer scope.      |
-| `Int("3.14")` returning `nil`                 | `Int(_:)` rejects decimals. Use `Double("3.14")` first.                     |
-| `arr[i]` with `i >= arr.count`                | Runtime crash. Guard with `i < arr.count` or use `arr.indices.contains(i)`. |
-| Switch missing `default` on non-enum          | Compile error — switches must be exhaustive. Add `default`.                 |
-| `as!` to a type the value isn't               | Runtime crash. Always use `as?` and bind.                                   |
-| Force unwrap "because it can't be nil"        | Famous last words. If you can prove it, use `guard let` and remove the proof.|
+| Severity         | Pitfall                                       | Why it trips students                                                       |
+| ---------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| [WRONG-OUTPUT]   | `print(optional)` showing `Optional("hi")`    | Compiles fine, only the *output* is wrong. Always unwrap before print.      |
+| [CRASH]          | `dict[k]!` when key exists at runtime         | Compiler can't prove key exists; subscript is `V?` regardless.              |
+| [WRONG-OUTPUT]   | `Int / Int` truncating                        | `5 / 2 == 2`, not `2.5`. Promote one side to `Double` before dividing.      |
+| [SUBTLE]         | `let c = ClassInstance(); c.prop = ...`       | Works! `let` only freezes the pointer, not the object's `var` properties.   |
+| [SUBTLE]         | Struct passed to function and mutated         | Mutation is on a copy; caller is unaffected. Use `inout` or return new value.|
+| [SUBTLE]         | Closure capturing a mutating var              | Sees the latest value, not the value at closure creation.                   |
+| [SCOPE]          | `if let x = x` and using `x` outside the `if` | `if let` only binds inside the block. Use `guard let` for outer scope.      |
+| [WRONG-OUTPUT]   | `Int("3.14")` returning `nil`                 | `Int(_:)` rejects decimals. Use `Double("3.14")` first.                     |
+| [CRASH]          | `arr[i]` with `i >= arr.count`                | Runtime crash. Guard with `i < arr.count` or use `arr.indices.contains(i)`. |
+| [COMPILE]        | Switch missing `default` on non-enum          | Compile error — switches must be exhaustive. Add `default`.                 |
+| [CRASH]          | `as!` to a type the value isn't               | Runtime crash. Always use `as?` and bind.                                   |
+| [CRASH]          | Force unwrap "because it can't be nil"        | Famous last words. If you can prove it, use `guard let` and remove the proof.|
 
 ---
 

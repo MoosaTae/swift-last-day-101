@@ -111,6 +111,23 @@ Text("A").padding().background(Color.yellow)
 Text("A").background(Color.yellow).padding()
 ```
 
+```text
+Before:                                    After:
+.padding().background(Color.yellow)        .background(Color.yellow).padding()
+
+┌──────────────────────────┐               ┌──────────────────────────┐
+│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│               │   (transparent margin)   │
+│▓▓▓▓▓▓▓▓▓▓ pad ▓▓▓▓▓▓▓▓▓▓▓│               │      ┌───────────┐       │
+│▓▓▓▓▓▓┌──────────┐▓▓▓▓▓▓▓▓│               │      │▓▓▓▓▓▓▓▓▓▓▓│       │
+│▓▓▓▓▓▓│    A     │▓▓▓▓▓▓▓▓│               │      │▓▓▓ A ▓▓▓▓▓│       │
+│▓▓▓▓▓▓└──────────┘▓▓▓▓▓▓▓▓│               │      │▓▓▓▓▓▓▓▓▓▓▓│       │
+│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│               │      └───────────┘       │
+└──────────────────────────┘               └──────────────────────────┘
+yellow ENGULFS the padding                 yellow HUGS the text only
+```
+
+Mantra: the modifier written first is closest to the content.
+
 Same logic with `.frame` and `.cornerRadius`:
 
 ```swift
@@ -129,6 +146,35 @@ If `.cornerRadius` comes BEFORE `.background`, the background re-paints square c
 .frame(maxWidth: .infinity)        // expand horizontally to fill parent
 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 ```
+
+```text
+.frame(width: 100, height: 50)              RIGID
+┌────────┐
+│ rigid  │   parent offer ignored; child takes exact 100x50
+└────────┘
+
+.frame(maxWidth: .infinity)                 GREEDY (W only)
+┌──────────────────────────────────────────┐
+│ greedy width                             │   takes all parent W; H = intrinsic
+└──────────────────────────────────────────┘
+
+.frame(maxWidth: .infinity, alignment: .leading)        ALIGNED
+┌──────────────────────────────────────────┐
+│ Hi░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│   wrapper greedy, content stays
+└──────────────────────────────────────────┘   intrinsic, pinned by alignment
+
+.frame(maxWidth:.infinity, maxHeight:.infinity)         FILL
+╔══════════════════════════════════════════╗
+║ full-screen background                   ║   used for ZStack back layer
+╚══════════════════════════════════════════╝
+```
+
+| Variant | Greedy W | Greedy H | Use |
+| --- | --- | --- | --- |
+| `width:height:` | no | no | icon, avatar, button |
+| `maxWidth:.infinity` | yes | no | full-row card |
+| `maxWidth:.infinity, alignment:.leading` | yes | no | pin label |
+| `maxW:.inf, maxH:.inf` | yes | yes | full-screen |
 
 Used for full-width cards:
 
@@ -179,15 +225,22 @@ VStack(alignment: .leading, spacing: 16) {
 
 Wireframe:
 
-```
-+----------------------------------+
-| [O]  Jane Doe                    |
-|      iOS Developer               |
-|                                  |
-|  Loves SwiftUI, coffee, and cats.|
-|                                  |
-|        [  Follow  ]              |
-+----------------------------------+
+```text
+┌──────────────────────────────────────┐
+│ ╭───╮  Jane Doe                      │
+│ │ O │  iOS Developer                 │
+│ ╰───╯                                │
+│                                      │
+│  Loves SwiftUI, coffee, and cats.    │
+│                                      │
+│           ┌────────────┐             │
+│           │   Follow   │             │
+│           └────────────┘             │
+└──────────────────────────────────────┘
+  ↑ outer VStack(.leading, spacing: 16)
+  HStack { avatar, VStack{name,role}, Spacer }
+  Text(bio)
+  HStack { Spacer, Button, Spacer }   ← centring trick
 ```
 
 Code:
@@ -367,9 +420,65 @@ Key trick: `.frame(maxWidth: .infinity)` on each card makes them split the row e
    `.font(.system(size:))` or `.imageScale(.large)`. To stretch them, add `.resizable()` first.
 5. Forgetting `Spacer()` when pushing to edges - without Spacer, HStack centres its content.
 6. ZStack alignment confusion - `alignment:` only applies to children that do not themselves
-   fill the ZStack. To pin a child to a corner inside a fixed-size ZStack, wrap in
-   `VStack { Spacer(); HStack { content; Spacer() } }` or set
-   `.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)`.
+   fill the ZStack. Three scenarios:
+
+   Scenario 1 - WORKS: `ZStack(alignment: .topLeading)` with intrinsic-sized children.
+
+   ```text
+   ZStack(alignment: .topLeading) {
+       Color.gray
+       Text("hi")          ← intrinsic size, alignment can act
+   }
+   ┌──────────────────────────────┐
+   │hi                            │
+   │                              │
+   │      (gray fills back)       │
+   │                              │
+   │                              │
+   └──────────────────────────────┘
+   ```
+
+   Takeaway: small child + alignment = pinned where you want.
+
+   Scenario 2 - IGNORED: a greedy child swallows the whole ZStack frame.
+
+   ```text
+   ZStack(alignment: .topLeading) {
+       Color.gray
+       Text("hi")
+           .frame(maxWidth:.infinity, maxHeight:.infinity)  ← greedy
+   }
+   ┌──────────────────────────────┐
+   │                              │
+   │                              │
+   │             hi               │   text centred INSIDE its own
+   │                              │   greedy frame (default .center)
+   │                              │
+   └──────────────────────────────┘
+   ```
+
+   Takeaway: a greedy child fills the ZStack; alignment has nothing to act on.
+
+   Scenario 3 - WORKS via Spacer-trick: wrap the small text so Spacers do the pushing.
+
+   ```text
+   ZStack {
+       Color.gray
+       VStack {
+           HStack { Text("hi"); Spacer() }
+           Spacer()
+       }
+   }
+   ┌──────────────────────────────┐
+   │hi                            │
+   │                              │
+   │                              │
+   │                              │
+   │                              │
+   └──────────────────────────────┘
+   ```
+
+   Takeaway: Spacers force the position even when a sibling is greedy.
 7. `foregroundColor` vs `foregroundStyle` - both work; `foregroundStyle` is newer and accepts
    gradients and hierarchy (`.secondary`, `.tertiary`).
 8. `.scaledToFill()` without `.clipped()` lets the image draw outside its frame.
@@ -377,6 +486,27 @@ Key trick: `.frame(maxWidth: .infinity)` on each card makes them split the row e
 ---
 
 ## Cheat-sheet ordering for a card-style view
+
+```text
+Card-chain pipeline (read top-to-bottom = outside-in wrapping):
+
+  content                          ── leaf (Text/VStack/...)
+     │
+     ▼
+  .padding()                       ── inner breathing room
+     │
+     ▼
+  .frame(maxWidth: .infinity)      ── grow to row width
+     │
+     ▼
+  .background(Color.X)             ── paint NOW (covers padding+frame)
+     │
+     ▼
+  .cornerRadius(R)                 ── round the painted area
+     │
+     ▼
+  .padding(.horizontal)            ── outer margin from screen
+```
 
 ```swift
 content

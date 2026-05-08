@@ -14,13 +14,29 @@ let name = "Tae"; var age: Int = 21; age += 1; let pi = 3.14   // Double
 
 `T?` may be nil. `T!` implicitly unwrapped (auto-unwrap on use; crashes if nil).
 
+```text
+   String              String?               String!
+   ┌──────┐         ┌──────────────┐     ┌──────────────┐
+   │ "hi" │         │ .some("hi")  │     │ .some("hi")  │ auto-opens
+   └──────┘         ├──────────────┤     ├──────────────┤ on use,
+   never nil        │    .none     │     │    .none     │ crashes
+                    └──────────────┘     └──────────────┘ if empty
+                    must open first       opens itself
+```
+
 ```swift
 var s: String? = "hi"
 print(s)        // Optional("hi")
 print(s!)       // hi   (crash if nil)
 ```
 
-Unwrap toolkit: `if let`, `guard let`, `??`, `?.`, `!` (avoid).
+| Situation                              | Tool        | Scope of unwrapped value |
+| -------------------------------------- | ----------- | ------------------------ |
+| Branch on present vs absent            | if let      | inside the {} block      |
+| Required value, bail on absent         | guard let   | rest of enclosing scope  |
+| Have a sensible default                | ??          | expression result        |
+| Just chain a method, propagate nil     | ?.          | result is still optional |
+| "Trust me bro" (avoid on exam)         | !           | crashes if nil           |
 
 ```swift
 if let n = Int("42") { print(n) }   // 42
@@ -41,7 +57,13 @@ let n = Int(s) ?? 0                                // (c)
 let upper = name?.uppercased()                     // (d) chaining
 ```
 
-Red flags on exam: any `!` after `Int(...)`, `URL(string:)`, `dict[key]`, `as!`.
+| Tag     | Pattern                  | Why it crashes                       | Fix              |
+| ------- | ------------------------ | ------------------------------------ | ---------------- |
+| [CRASH] | Int("abc")!              | Int(_:) returns nil for non-numbers  | if let / ??      |
+| [CRASH] | URL(string: s)!          | nil for malformed URLs               | guard let        |
+| [CRASH] | dict[key]!               | subscript is V? even if key exists   | dict[k] ?? def   |
+| [CRASH] | value as! T              | nil/trap on type mismatch            | as? + if let     |
+| [WARN]  | arr[i] without bounds    | OOB traps; subscript not optional    | indices.contains |
 
 ## 4. String <-> Int
 
@@ -118,6 +140,15 @@ var s1=S(); var s2=s1; s2.n=5         // s1.n=0, s2.n=5
 let c1=C(); let c2=c1; c2.n=5         // c1.n=5, c2.n=5
 ```
 
+```text
+STRUCT (stack, copied)            CLASS (heap, shared pointer)
+
+s1 ─► [n:0]                       c1 ──┐
+s2 ─► [n:5]   (independent)            ├─► heap{ n:5 }   (shared)
+                                  c2 ──┘
+prints: s1=0  s2=5                prints: c1=5  c2=5
+```
+
 `let` on a class still allows mutating its `var` properties.
 
 ## 10. Enums
@@ -155,6 +186,18 @@ switch r { case .ok(let v): ...; case .fail(let m): ... }
 | Q   | `try?` — `func f() throws -> Int { throw E.x }; print(try? f())` | `nil` (try? converts throw to nil, swallows error) |
 
 ## 12. Code-Improvement Checklist
+
+```text
+See bad code -> ask:
+├── Has `!`?
+│   ├── after Int / URL / dict / as -> rule 1-4 (if let / guard / ?? / as?)
+│   └── after array subscript       -> rule 5 (bounds-guard)
+├── Has a literal repeated > once   -> rule 6 (let constant)
+├── Same expression computed twice  -> rule 7 (hoist into let)
+├── 3+ if/else over one value       -> rule 8 (switch)
+├── `[Any]` or mixed-type literal   -> rule 9 (annotate / split)
+└── `try?` on async network call    -> rule 10 (do/catch + surface error)
+```
 
 **Swift basics (closed-book):**
 1. `Int(s)!` -> `if let`/`??`

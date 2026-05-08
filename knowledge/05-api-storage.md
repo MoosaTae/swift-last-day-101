@@ -21,6 +21,22 @@ func load() async {
 ```
 
 Steps: (1) build URL, (2) do/catch, (3) try await URLSession.shared.data(from:), (4) JSONDecoder().decode(T.self, from: data).
+
+```text
+ ┌──────────┐    ┌──────────┐    ┌────────────┐    ┌────────────┐    ┌──────────┐
+ │  String  │──► │   URL?   │──► │ URLSession │──► │JSONDecoder │──► │ @State   │
+ │  literal │    │guard let │    │.data(from:)│    │.decode(T)  │    │ items=…  │
+ └──────────┘    └────┬─────┘    └─────┬──────┘    └─────┬──────┘    └────┬─────┘
+                      │ nil            │ throws          │ throws         │
+                      ▼                ▼                 ▼                ▼
+                  return /         catch err        catch err        body re-renders
+                  errorMsg     (offline, 4xx,     (key/type/date    (List redraws)
+                               cancelled)          mismatch)
+
+   sync edges ──►        suspension point  ⏸ try await
+   error edges ▼         single catch sink  ◄── all throws funnel here
+```
+
 `URLSession.shared.data(from: URL)` is `async throws` and returns `(Data, URLResponse)`.
 
 ## 2. Codable
@@ -134,7 +150,25 @@ final class WeatherVM: ObservableObject {
 ```swift
 @State private var phase: Phase = .idle
 enum Phase { case idle, loading, loaded([Item]), failed(String) }
+```
 
+```text
+              ┌──────────┐   .task fires    ┌──────────┐
+       start ►│   idle   │─────────────────►│ loading  │
+              └──────────┘                  └────┬─────┘
+                                                 │
+                            ┌────────────────────┼────────────────────┐
+                            │ guard URL fails    │ 200..<300 + decode │ throw / non-2xx
+                            ▼                    ▼                    ▼
+                     ┌────────────┐       ┌────────────┐       ┌────────────┐
+                     │  failed    │       │  loaded    │       │  failed    │
+                     │ "Bad URL"  │       │  [Item]    │       │ err.local… │
+                     └────────────┘       └────────────┘       └────────────┘
+
+   UI: idle/loading → ProgressView   loaded → List   failed → red Text
+```
+
+```swift
 func load() async {
     phase = .loading
     guard let url = URL(string: urlString) else { phase = .failed("Invalid URL"); return }
@@ -178,6 +212,23 @@ struct SettingsView: View {
 
 `@AppStorage` only supports primitives — wrap your Codable as `Data`. Note: a computed property with `set` must live inside a struct/class; pasting just the getter/setter at file scope or inside another computed `var` won't compile.
 
+```text
+   View read path (get)                     View write path (nonmutating set)
+
+   profileData: Data                        profile = Profile(name:"Tae", age:21)
+   (UserDefaults["profile"])                          │
+         │                                            ▼
+         │  JSONDecoder().decode                JSONEncoder().encode
+         ▼                                            │
+   Profile(name, age)  ◄── ?? fallback         Data (utf8 JSON bytes)
+         │              Profile(name:"",age:0)        │
+         ▼                                            ▼
+   Text("Hi, \(profile.name)")             profileData = newData
+                                                      │
+                                                      ▼
+                                           UserDefaults["profile"] persists
+```
+
 ```swift
 struct Profile: Codable { var name: String; var age: Int }
 
@@ -210,7 +261,13 @@ let s = UserDefaults.standard.string(forKey: "user")
 UserDefaults.standard.removeObject(forKey: "user")
 ```
 
-`@AppStorage` triggers SwiftUI re-renders. `UserDefaults` does NOT.
+| axis | `@AppStorage("k")` | `UserDefaults.standard` |
+|---|---|---|
+| usable in | SwiftUI Views only | anywhere (VM, services, tests) |
+| re-renders body | yes (publishes on change) | no (manual KVO if needed) |
+| default value | required at declaration | returns nil / 0 / false if unset |
+| binding syntax | `$flag` works directly | wrap in `@State` + manual sync |
+| supported types | Bool, Int, Double, String, URL, Data, RawRepresentable | `Any` plist-compatible |
 
 ## 7. Settings worked example (toggle + username)
 

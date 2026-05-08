@@ -29,14 +29,20 @@ Both halves share a problem: **time**. Networks are slow (50–2000 ms). Disk is
 
 > Mental model for `async/await`: think of `await` as "I'm going to step off the treadmill for a bit; let other UI work run; wake me up when the answer is ready." The function literally suspends, returns control to the system, and resumes later on a continuation. It is *not* a thread sleep.
 
-```
-   main thread timeline (without async)
-   |---fetch (frozen UI)----------------|---paint---|
+```text
+   t →   0ms        50         300         900        1200ms
 
-   main thread timeline (with await)
-   |--start fetch--|       (UI stays live)        |--resume--|--paint--|
-                   \________ awaiting __________/
-                          (network in progress)
+   sync (DispatchQueue.main + blocking fetch)
+   main: ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░  spinner stuck
+         └──────── UI frozen, no taps ────────┘  └─paint─┘
+
+   async (try await URLSession.shared.data(from:))
+   main: ░░│                              │░░░░░░  taps + animations OK
+            │  ⏸ suspended at await ⏸      │
+   net :    └──── network in flight ───────┘
+                  (off-main, system-managed)
+
+   Legend  ▓ blocked   ░ live   ⏸ suspension point
 ```
 
 This file teaches the network half first because it forces you to internalize async. Then storage, where async mostly disappears again.
@@ -101,6 +107,21 @@ struct V: View {
 | Cancellation | Auto-cancelled when the view disappears | You manage it |
 | Identity | Re-runs when `id:` argument changes | Doesn't restart on view updates |
 | Use for | "Load data when this view appears" | One-off fire-and-forget from sync code |
+
+| scenario | pick | severity if wrong |
+|---|---|---|
+| load list when screen appears | `.task { await load() }` | [HIGH] `.onAppear { await … }` won't compile |
+| fire-and-forget on Button tap | `Task { await send() }` | [MED] missing `Task` → "await in sync context" error |
+| re-fetch when `userId` changes | `.task(id: userId) { … }` | [HIGH] plain `.task` ignores updates → stale data |
+| network call inside `init()` | neither — move to `.task` | [CRITICAL] init runs on every reconstruction → request storms |
+| forced `.onAppear` by spec | `.onAppear { Task { await load() } }` | [LOW] works, but loses auto-cancel on disappear |
+
+```text
+   decision tree
+   ┌── inside a View body? ──► yes ──► .task(id:) if input-driven, else .task
+   │                                   └── auto-cancel on disappear ✓
+   └── from Button / sync func ──► Task { await … } (you own cancellation)
+```
 
 **Rule of thumb:** use `.task` for view-lifecycle work; only fall back to `onAppear { Task { ... } }` if you have a reason.
 
@@ -188,23 +209,28 @@ if let http = resp as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
 
 ### 3.6 Lifecycle ASCII
 
-```
-  View appears
-       |
-       v
-  .task starts coroutine
-       |
-       v
-  guard URL ok ----> no ----> set errorMessage, return
-       |
-       v
-  try await data(from:) ----> network error ---> catch
-       |                                            ^
-       v                                            |
-  try decode([Item].self) -----> mismatch ----------+
-       |
-       v
-  items = result   --->  @State changes  --->  body re-renders  --->  List redraws
+```text
+  ┌───────────────────┐
+  │  View appears     │   body runs once with initial @State
+  └─────────┬─────────┘
+            │ .task { await load() }    (cancels on disappear)
+            ▼
+  ┌───────────────────┐
+  │ phase = .loading  │──► body re-renders → ProgressView
+  └─────────┬─────────┘
+            │
+            ▼
+     guard let url ──── nil ──► phase = .failed("Bad URL") ──► red Text
+            │
+            │ try await URLSession.shared.data(from:) ⏸
+            ▼
+     status 200..<300? ── no ──► phase = .failed("HTTP 500")
+            │
+            ▼
+     try JSONDecoder().decode([Item].self) ── throw ──► .failed(err.localized…)
+            │
+            ▼
+     phase = .loaded(items) ──► body re-renders → List
 ```
 
 ---
@@ -507,6 +533,25 @@ struct WeatherView: View {
 ```
 
 Think of it as: "a `@State` variable that survives app relaunch, stored under a key in UserDefaults."
+
+```text
+   ┌───────────────────────── App process (lifetime: launch → kill) ──────────┐
+   │                                                                           │
+   │   View body            @AppStorage("isDarkMode")  ◄── property wrapper   │
+   │       ▲                       │  ▲                                       │
+   │       │ re-render on change   │  │ writes invalidate views               │
+   │       └───────────────────────┤  │                                       │
+   │                               ▼  │                                       │
+   │                       UserDefaults.standard  (in-memory cache)           │
+   └───────────────────────────────│──┬────────────────────────────────────────┘
+                                   │  │ flushed periodically + on suspend
+                                   ▼  │
+                          ┌──────────────────┐
+                          │ <bundle>.plist   │   on-disk, sandboxed
+                          │ key="isDarkMode" │   survives relaunch & reboot
+                          │ value=true       │   cleared by app uninstall
+                          └──────────────────┘
+```
 
 ### 6.2 Supported types
 

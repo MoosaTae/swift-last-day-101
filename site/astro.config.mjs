@@ -3,12 +3,13 @@ import { defineConfig } from 'astro/config';
 
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
+import askBridge from './scripts/ask-bridge.mjs';
 
 // https://astro.build/config
 export default defineConfig({
   integrations: [react()],
 
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss(), askBridge()]
   }
 });

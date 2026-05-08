@@ -10,9 +10,20 @@
 
 SwiftUI flips the imperative UI model on its head. You do not "update the label when the button is tapped". You **declare what the UI looks like for any given state**, and SwiftUI re-runs that declaration whenever state changes.
 
-```
-Action  --writes-->  State  --triggers-->  body recompute  -->  new View tree
-(tap)               (@State)              (SwiftUI runs it)     (diffed, drawn)
+```text
+       ┌──────────────┐  closure runs first,   ┌──────────────┐
+       │   ACTION     │  mutates state         │    STATE     │
+       │ (tap, swipe, │ ─────────────────────► │  @State box  │
+       │  onSubmit)   │                        │ (count += 1) │
+       └──────▲───────┘                        └──────┬───────┘
+              │                                       │
+              │ user produces                         │ SwiftUI schedules
+              │ next action                           │ a body recomputation
+              │                                       ▼
+       ┌──────┴───────┐    diff + draw         ┌──────────────┐
+       │     VIEW     │ ◄───────────────────── │  body() rerun │
+       │  (pixels)    │                        │ new View tree │
+       └──────────────┘                        └──────────────┘
 ```
 
 Two consequences flow from this:
@@ -132,17 +143,30 @@ A child view often needs to mutate a piece of state owned by its parent (e.g. a 
 
 Every property wrapper has a "projected value" accessed via `$`. For `@State`, the projected value is a `Binding` to the underlying storage. Passing `$count` to a child gives the child read+write access, not a copy.
 
-```
-PARENT                                   CHILD
-+--------------------+                   +--------------------+
-| @State var isOn    |--owns-->[Bool]<--| @Binding var isOn  |
-|                    |   storage   ^    |                    |
-| ToggleRow(isOn:    |             |    | reads & writes the |
-|   $isOn)           |             |    | parent's storage   |
-+--------------------+             |    +--------------------+
-        |                          |
-        +---- $isOn (projected) ---+
-              "two-way reference"
+```text
+   PARENT                  CHILD                 STORAGE BOX
+   ────────────────────────────────────────────────────────────
+1) renders, creates ──────────────────────────►  [ isOn=false ]
+   @State var isOn
+                                                       ▲
+2) passes $isOn  ──────►  receives                     │
+   (Binding<Bool>         @Binding var isOn ───────────┤
+   proxy)                 (proxy, no storage)          │ owned by
+                                                       │ parent
+3)                        renders Toggle(              │
+                          isOn: $isOn)                 │
+                                                       │
+4)                        user flips toggle            │
+                          in child                     │
+                              │                        │
+5)                        binding setter ─────────────►[ isOn=true ]
+                          writes through               │
+                                                       │
+6) SwiftUI invalidates ◄───────────────────────────────┘
+   parent (depends on isOn)
+                                                       
+7) parent body          ─►  child re-renders
+   recomputes               with new value
 ```
 
 ### Annotated parent + child
@@ -215,12 +239,24 @@ A view struct is recreated on every render. Its properties get re-initialized. I
 
 `@StateObject` (legacy) and `@State` on an `@Observable` (modern) tell SwiftUI: "make this object exactly once, when the view first appears, and keep it across re-creations of the struct." That's lifecycle ownership.
 
-```
-WRONG (ObservedObject as creator)         RIGHT (StateObject / @State creates once)
+```text
+   WRONG  child has  let model = Store()       (plain stored property)
+   ──────────────────────────────────────────────────────────────────
+            Render 0          Render 1            Render 2
+            (first appear)    (parent re-renders) (parent re-renders)
+   model:   Store#A           Store#B  ✗ NEW      Store#C  ✗ NEW
+   data:    count=0           count=0  ← LOST     count=0  ← LOST
+            user taps +3                          (no memory of taps)
+            count=3 in #A     #A discarded        #B discarded
 
-render 1: var store = Store()  [A]        render 1: @State store = Store()  [A]
-render 2: var store = Store()  [B]        render 2: same struct -> still [A]
-render 3: var store = Store()  [C]        render 3: still [A]
+   RIGHT  parent owns @State var store = Store()    (or @StateObject)
+   ──────────────────────────────────────────────────────────────────
+            Render 0          Render 1            Render 2
+   store:   Store#A           Store#A  ✓ same     Store#A  ✓ same
+   data:    count=0           count=3  SURVIVES   count=3  SURVIVES
+            user taps +3      (parent rerendered  (state intact across
+            count=3            for unrelated       re-renders)
+                               reason)
 ```
 
 ### Rule of thumb
@@ -341,6 +377,24 @@ struct Sheet: View {
 Pre-iOS 17, you wrote `class Foo: ObservableObject { @Published var x = 0 }` and SwiftUI re-rendered any view that observed `Foo` whenever **any** `@Published` changed. That was coarse — a view reading only `foo.x` would re-render when `foo.y` changed.
 
 `@Observable` (powered by Swift's macro system + the `Observation` framework) does property-level dependency tracking automatically. You write a plain class with plain `var`s, and SwiftUI only re-renders views that actually read the specific property that changed.
+
+```text
+   Store has: var x, var y         mutation: store.x += 1
+
+   LEGACY  ObservableObject + @Published
+   ┌─────────────────┬──────────────┬──────────────┐
+   │ View reads x    │ View reads y │ View reads -- │
+   ├─────────────────┼──────────────┼──────────────┤
+   │  RE-RENDER ✓    │ RE-RENDER ✓  │ RE-RENDER ✓  │   (any @Published fires all)
+   └─────────────────┴──────────────┴──────────────┘
+
+   MODERN  @Observable (Observation framework)
+   ┌─────────────────┬──────────────┬──────────────┐
+   │ View reads x    │ View reads y │ View reads -- │
+   ├─────────────────┼──────────────┼──────────────┤
+   │  RE-RENDER ✓    │   skip       │   skip       │   (per-property tracking)
+   └─────────────────┴──────────────┴──────────────┘
+```
 
 ### The whole pattern
 
@@ -576,6 +630,24 @@ struct GameView: View {
 ## 8. Common Pitfalls — Why Each Trips Students
 
 > **Priority:** DRILL — graders specifically hunt these in code-improvement.
+
+```text
+   Tap-order timeline (Button("inc") { count += 1 })
+
+   t=0   user taps Button
+          │
+          ▼
+   t=1   closure (action: { ... }) runs SYNCHRONOUSLY
+          │   mutates @State  (count += 1)
+          ▼
+   t=2   SwiftUI marks dependents invalid
+          │   (views that read `count` queued for rebuild)
+          ▼
+   t=3   body recomputes  → new View struct
+          │
+          ▼
+   t=4   diff + draw  → pixels on screen
+```
 
 | Pitfall                                                       | Why it traps                                                                                |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |

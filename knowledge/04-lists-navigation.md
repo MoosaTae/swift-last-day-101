@@ -10,6 +10,22 @@ Final-exam cheat sheet. iOS 16+ assumed (NavigationStack, value-based nav).
 | Lazy? | No (eager unless LazyVStack) | Yes (rows recycled) |
 | Use when | Custom layouts, mixed widgets | Homogeneous data rows, edit/delete/move |
 
+```text
+ScrollView + VStack (EAGER)        List (LAZY, recycles)
+┌─────────────────────────┐        ┌─────────────────────────┐
+│ Row 0   built  ▣        │        │ Row 0   built  ▣        │
+│ Row 1   built  ▣        │        │ Row 1   built  ▣        │
+│ Row 2   built  ▣ visible│        │ Row 2   built  ▣ visible│
+│ Row 3   built  ▣        │        │ Row 3   built  ▣        │
+├─ scroll viewport ───────┤        ├─ scroll viewport ───────┤
+│ Row 4   built  ▣        │        │ Row 4   ░ not built     │
+│ ...                     │        │ ...                     │
+│ Row 9999 built  ▣  ✗    │        │ Row 9999 ░ not built  ✓ │
+└─────────────────────────┘        └─────────────────────────┘
+  builds all up front,               builds rows on demand,
+  scrollbar = full content           reuses cells offscreen
+```
+
 ```swift
 // ScrollView path (what the slides actually teach)
 ScrollView(.vertical) {
@@ -57,10 +73,27 @@ struct Message: Identifiable, Hashable {
     var value: String
 }
 ```
+
+| Need                                  | Identifiable | Hashable | Why                                |
+|---------------------------------------|:------------:|:--------:|------------------------------------|
+| `List(items) { ... }` (no `id:`)      | ✓            | ✗        | row diffing uses `id`              |
+| `List(items, id: \.self)`             | ✗            | ✓        | value itself becomes the key       |
+| `NavigationLink(value: x)`            | ✗            | ✓        | type-keyed destination registry    |
+| `.navigationDestination(for: T.self)` | ✗            | ✓        | T must hash for lookup             |
+| `Set<T>` / `Dictionary` key           | ✗            | ✓        | hash buckets                       |
+| Both list row + push target           | ✓            | ✓        | the normal model case              |
+
 - `Identifiable` -> `List(items) { ... }` with no `id:`.
 - `Hashable` -> `NavigationLink(value:)` + `.navigationDestination(for:)`.
 
 ## 4. NavigationStack (iOS 16+, replaces NavigationView)
+
+| Style          | Syntax pattern                                | Construction timing | Use when                | Pitfall                       |
+|----------------|-----------------------------------------------|---------------------|-------------------------|-------------------------------|
+| Closure (eager)| `NavigationLink("X") { DestView() }`          | built per-row now   | tiny lists, prototypes  | 1000 rows = 1000 destinations |
+| Value (lazy)   | `NavigationLink("X", value: x)` + `.navigationDestination(for:)` | built on tap | default choice    | value type must be `Hashable` |
+| Bool flag      | `.navigationDestination(isPresented: $b)`     | built on tap        | push from non-button    | one bool per destination      |
+| `NavigationPath`| `path.append(x)` + `.navigationDestination(for:)` | built on tap | deep links, multi-type | unregistered = blank screen   |
 
 ### a) Closure-based push
 ```swift
@@ -81,7 +114,20 @@ NavigationStack {
         .navigationDestination(for: Int.self)    { IntScreen(number: $0) }
 }
 ```
-`.navigationDestination` MUST live inside the NavigationStack root — not inside a pushed child.
+```text
+┌─ NavigationStack { ─────────────────────────────────┐
+│   List(items) { ... }                               │
+│     .navigationDestination(for: Item.self) { ... }  │  ✓ inside stack, on root content
+│ } ───────────────────────────────────────────────── │
+│ .navigationDestination(for: Item.self) { ... }      │  ✗ outside stack — silent no-op
+└─────────────────────────────────────────────────────┘
+```
+
+- ✓ Attached to root content (List/VStack) **inside** `NavigationStack { ... }`
+- ✓ Registered **once per type**, near the root
+- ✗ Attached to the destination view itself — never fires
+- ✗ Attached **after** the closing `}` of `NavigationStack` — silently ignored
+- ✗ Type pushed via `path.append` with no matching registration — blank screen, no crash
 
 ### c) Programmatic via Bool
 ```swift
@@ -234,6 +280,28 @@ struct TaskList: View {
 ```
 
 ## 7. NavigationStack vs TabView
+
+```text
+   Push (NavigationLink)        Sheet (.sheet)             Tabs (TabView)
+┌──────────────────────┐     ┌──────────────────────┐    ┌──────────────────────┐
+│ ◄ Back   Detail      │     │   (parent dimmed)    │    │      Home            │
+├──────────────────────┤     │                      │    │                      │
+│                      │     │                      │    │   content area       │
+│  pushed view         │     ├────── ▬▬▬ ──────────┤    │                      │
+│  on top of root      │     │       drag           │    │                      │
+│                      │     │   Edit Item          │    │                      │
+│                      │     │                      │    │                      │
+│                      │     │  [Name ____________] │    │                      │
+│                      │     │  [Save]   [Cancel]   │    ├──────────────────────┤
+└──────────────────────┘     └──────────────────────┘    │ ● Home  ○ Profile    │
+                                                         └──────────────────────┘
+```
+
+| Primitive | Stack? | Dismiss | Use for |
+|---|---|---|---|
+| Push (NavigationLink) | yes (back stack) | back chevron | drilling into detail |
+| Sheet (.sheet) | no (modal) | swipe down / Done | one-shot edit / picker |
+| Tabs (TabView) | independent stacks per tab | tap another tab | top-level sections |
 
 - `NavigationStack` — drill-down (push/pop), one active screen, back stack.
 - `TabView` — peer screens, each tab usually owns its own `NavigationStack`.
