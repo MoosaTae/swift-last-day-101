@@ -1,0 +1,84 @@
+---
+import '../styles/global.css';
+import pages from '../data/pages.json';
+
+interface Props {
+  title: string;
+  active?: string;
+}
+
+const { title, active = '' } = Astro.props;
+
+const knowledge = Object.entries(pages.knowledge ?? {}).sort(([a], [b]) => a.localeCompare(b));
+const learn = Object.entries(pages.learn ?? {}).sort(([a], [b]) => a.localeCompare(b));
+const mock = Object.entries(pages.mock ?? {}).sort(([a], [b]) => a.localeCompare(b));
+
+const linkClass = (href: string) => {
+  const base = 'block rounded-md px-3 py-1.5 text-sm transition-colors';
+  return active === href
+    ? `${base} bg-zinc-800 text-zinc-100 font-medium`
+    : `${base} text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200`;
+};
+---
+
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="color-scheme" content="dark" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen">
+    <div class="flex min-h-screen">
+      <aside class="w-60 shrink-0 border-r border-zinc-800 bg-zinc-950 px-3 py-5 sticky top-0 h-screen overflow-y-auto">
+        <a href="/" class="block px-3 pb-4 mb-2 border-b border-zinc-800">
+          <div class="text-sm font-semibold text-zinc-100">iOS Final</div>
+          <div class="text-xs text-zinc-500">May 9 - 14:00</div>
+        </a>
+
+        <nav class="space-y-5">
+          <div>
+            <a href="/" class={linkClass('/')}>Drill</a>
+          </div>
+
+          <div>
+            <div class="px-3 mb-1 text-xs uppercase tracking-wider text-zinc-500">Knowledge</div>
+            <a href="/knowledge/" class={linkClass('/knowledge/')}>All topics</a>
+            {knowledge.map(([slug, p]) => (
+              <a href={`/knowledge/${slug}`} class={linkClass(`/knowledge/${slug}`)}>
+                <span class="text-zinc-600 mr-2">{slug}</span>{p.title}
+              </a>
+            ))}
+          </div>
+
+          <div>
+            <div class="px-3 mb-1 text-xs uppercase tracking-wider text-zinc-500">Learn</div>
+            <a href="/learn/" class={linkClass('/learn/')}>All topics</a>
+            {learn.map(([slug, p]) => (
+              <a href={`/learn/${slug}`} class={linkClass(`/learn/${slug}`)}>
+                <span class="text-zinc-600 mr-2">{slug}</span>{p.title}
+              </a>
+            ))}
+          </div>
+
+          <div>
+            <div class="px-3 mb-1 text-xs uppercase tracking-wider text-zinc-500">Mock Exam</div>
+            <a href="/mock/" class={linkClass('/mock/')}>Overview</a>
+            {mock.map(([slug, p]) => (
+              <a href={`/mock/${slug}`} class={linkClass(`/mock/${slug}`)}>
+                <span class="text-zinc-600 mr-2">{slug}</span>{p.title}
+              </a>
+            ))}
+          </div>
+        </nav>
+      </aside>
+
+      <main class="flex-1 min-w-0">
+        <div class="mx-auto max-w-3xl px-6 py-8">
+          <slot />
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

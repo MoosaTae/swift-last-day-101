@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftUI Final Exam Study Guide</title>
+    <!-- Tailwind CSS for layout and basic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Typography plugin for markdown styling -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <!-- marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="flex h-screen bg-gray-50 text-gray-800 font-sans antialiased dark:bg-gray-900 dark:text-gray-200 transition-colors duration-200">
+    
+    <!-- Sidebar -->
+    <div class="w-72 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0 flex flex-col shadow-sm dark:bg-gray-800 dark:border-gray-700 transition-colors duration-200">
+        <div class="p-6 border-b border-gray-100 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50">
+            <h1 class="text-xl font-bold text-gray-900 tracking-tight dark:text-white">Final Exam Prep</h1>
+            <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">iOS Development</p>
+        </div>
+        <nav class="p-4 space-y-1 flex-1" id="nav-container">
+            <!-- Buttons injected here by JS -->
+        </nav>
+        <div class="p-4 border-t border-gray-100 flex justify-between items-center dark:border-gray-700">
+            <span class="text-xs text-gray-400 dark:text-gray-500">Offline Study App</span>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-y-auto p-8 md:p-12 lg:p-16 dark:bg-gray-900 transition-colors duration-200">
+        <article class="prose prose-slate dark:prose-invert prose-pre:p-0 prose-pre:bg-transparent prose-img:rounded-xl max-w-4xl mx-auto bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200" id="content">
+            <!-- Rendered Markdown goes here -->
+        </article>
+    </div>
+
+<!-- ================= EMBEDDED MARKDOWN DATA ================= -->
+
+<script type="text/markdown" id="md-instruction">
+Final Exam
+วันที่ 9 พฤษภาคม 2569 เวลา 14:00 – 16:45
+30% ของคะแนนรวม
+รายละเอียด
+
+1. ข้อเขียน
+   ไม่อนุญาตให้นําเอกสารเข้าห้องสอบ (Closed Book) เวลาสอบ: 45 นาที | คะแนนเต็ม: 10 คะแนน
+   Output Prediction
+
+- มีโค้ด Swift สั้
+  น ๆ ให้นิสิตทําการดูโค้ด และเขียนตอบว่าผลลัพธ์สุดท้ายที่ถูกพิมพ์ออกมาคืออะไร
+  Code Improvement
+- ให้ปรับปรุงโค้ดที่กําหนดมาพร้อมกับบอกเหตุผลว่าทําไมถึงต้องปรับปรุงโค้ด
+- เช่น มีโค้ดที่มีการใช้Force Unwrap ในตอนที่แปลงจาก string เป็น int โดยเราต้องระบุว่าโค้ดชุดนี้ผิดอย่างไร และบอกว่า
+  เราควรใช้Optional Binding (if let หรือ ??) เพื่อให้ปลอดภัยขึ้น
+  View Decomposition
+- มีwireframe หน้าจอมาให้และให้เขียน UI โดยใช้stack ต่าง ๆ เพื่อให ้ใกล้เคียงกับ wireframe มากที่สุด
+- UI ที่ใช้จะเป็น UI พื้นฐานเท่านั้
+  น เช่น VStack, HStack, Text, Image
+
+2. ปฏิบัติ
+   อนุญาตให้นําเอกสารเข้าห้องสอบ (Open Book) เวลาสอบ: 120 นาที | คะแนนเต็ม: 20 คะแนน
+
+- จะมีโค้ดที่เตรยีมไวใ้ห้โดยจะใหเ้พิ่
+  มฟีเจอรหรือ ์ refactor ที่อิงจากโค้ดเดิม
+- แต่ละคนจะต้องแสดงความเข้าใจในการอ่านโค้ด, debug และแสดงข้อมูลให้ถูกต้อง เพื่อให้แอปทํางานได้อย่างถูกต้อง
+- โดยการใหค้ ะแนนจะดูทั้
+  งความสมบูรณ์ของตัวแอป และความถูกต้องของ logic ที่จะประเมินผ่านการรัน Unit Test
+  เนื้อหาที่ครอบคลุม
+  เนื้อหาจะเป็นตาม slide ที่เรียนในห้องรวมถึงการประยุกต์เนื้อหาจาก self-study และ assignment ต่าง ๆ โดยเนื้อหาที่ควรทบทวนจะ
+  มีตามนี้
+
+1. พื้นฐานภาษา Swift และโครงสร้างข้อมูล
+2. การจัดหน้าจอด้วย SwiftUI และ Modifiers ต่าง ๆ
+3. การจัดการ State และการโต้ตอบกับผู ้ใช้งาน
+4. การแสดงรายการและการเปิดหน้าใหม่
+5. การเรียก API และการเก็บข้อมูลบนเครื่อง (AppStorage)
+</script>
+
+<script type="text/markdown" id="md-01-swift-basics">
+# Swift Basics — Final Exam Cheatsheet
+
+**Closed-book targets:** output prediction + code improvement (force-unwrap fixes).
+
+## 1. Variables & Type Inference
+- `let` immutable, `var` mutable. Inferred unless annotated. No-decimal literal -> `Int`; with-decimal -> `Double`.
+```swift
+let name = "Tae"; var age: Int = 21; age += 1; let pi = 3.14   // Double
+```
+
+## 2. Optionals
+`T?` may be nil. `T!` implicitly unwrapped (auto-unwrap on use; crashes if nil).
+```swift
+var s: String? = "hi"
+print(s)        // Optional("hi")
+print(s!)       // hi   (crash if nil)
+```
+Unwrap toolkit: `if let`, `guard let`, `??`, `?.`, `!` (avoid).
+```swift
+if let n = Int("42") { print(n) }   // 42
+let m = Int("oops") ?? 0            // 0
+let len = s?.count ?? 0
+```
+
+## 3. Force-Unwrap Dangers (HEAVILY tested)
+`Int(_:)` returns `Int?`. `Int("abc")!` -> crash.
+
+Four safe rewrites:
+```swift
+if let n = Int(s) { ... } else { ... }            // (a)
+guard let n = Int(s) else { return 0 }            // (b)
+let n = Int(s) ?? 0                                // (c)
+let upper = name?.uppercased()                     // (d) chaining
+```
+Red flags on exam: any `!` after `Int(...)`, `URL(string:)`, `dict[key]`, `as!`.
+
+## 4. String <-> Int
+```swift
+Int("7")        // Optional(7)
+Int("3.14")     // nil
+Int("7") ?? -1  // 7
+String(42)      // "42"
+"id-\(Int("7") ?? 0)"   // "id-7"
+```
+
+## 5. Collections
+**Array**: `append`, `count`, `isEmpty`, `xs[i]` (crashes OOB), `map`, `filter`, `reduce(0, +)`.
+**Dictionary** subscript returns `V?`: `d["x"] ?? 0`.
+**Set**: unordered unique; `insert`, `contains`.
+
+## 6. Control Flow
+```swift
+if let a = Int("3"), let b = Int("4"), a < b { ... }
+guard let n, !n.isEmpty else { return }
+switch score {
+case 0..<50: ...; case 50..<80: ...
+case 80...100 where score == 100: ...
+default: ...
+}
+switch (x,y) { case (0,0): ...; case (_,0): ...; case (let a, let b) where a==b: ...; default: ... }
+for (i,v) in arr.enumerated() { ... }
+```
+
+## 7. Closures
+```swift
+nums.sorted { $0 < $1 }       // trailing closure + $0/$1
+nums.map { $0 * 10 }
+```
+Capture by reference — closure sees later mutations:
+```swift
+var x = 1; let f = { print(x) }; x = 99; f()   // 99
+```
+
+## 8. Functions
+```swift
+func greet(to name: String, from sender: String = "Tae") -> String { "Hi \(name) from \(sender)" }
+func square(_ x: Int) -> Int { x * x }
+func minMax(_ xs:[Int]) -> (min:Int,max:Int)? { ... }
+```
+
+## 9. Struct vs Class
+- `struct` = value type, copied on assignment/parameter-pass.
+- `class` = reference type, shared.
+```swift
+struct S { var n=0 }; class C { var n=0 }
+var s1=S(); var s2=s1; s2.n=5         // s1.n=0, s2.n=5
+let c1=C(); let c2=c1; c2.n=5         // c1.n=5, c2.n=5
+```
+`let` on a class still allows mutating its `var` properties.
+
+## 10. Enums
+```swift
+enum Dir: String, CaseIterable { case up, down, left, right }
+Dir.up.rawValue           // "up"
+Dir(rawValue:"down")      // Optional(.down)
+Dir.allCases.count        // 4
+
+enum Result2 { case ok(Int); case fail(String) }
+switch r { case .ok(let v): ...; case .fail(let m): ... }
+```
+
+## 11. Output Prediction Drills (memorize)
+
+| # | Code | Output |
+|---|------|--------|
+| A | `print(Optional("hi"))` | `Optional("hi")` |
+| B | `Int("12a")!` | runtime crash |
+| C | `(3+4)/2` then `Double(7)/2` | `3` then `3.5` |
+| D | struct vs class copy (s1/s2/c1/c2 above) | `0 5 5 5` |
+| E | closure capture (var x=10; let f={print(x)}; x=42; f()) | `42` |
+| F | `print(["a":1]["a"])` | `Optional(1)` |
+| G | `[1,2,3,4].filter{$0%2==0}.map{$0*$0}.reduce(0,+)` | `20` |
+| H | `switch 65 { case ..<50: "F"; case 50..<80: "C"; default: "A" }` | `C` |
+| I | `print("age=\(Optional(20))")` vs `\(opt ?? 0)` | `age=Optional(20)` vs `age=20` |
+
+## 12. Code-Improvement Checklist
+1. `Int(s)!` -> `if let`/`??`
+2. `URL(string:s)!` -> `guard let`
+3. `dict[k]!` -> `dict[k] ?? default`
+4. `as!` -> `as?` + `if let`
+5. unchecked `arr[i]` -> bounds guard
+6. magic numbers -> `let constant`
+7. duplicate computation -> store in `let`
+8. long if/else over one value -> `switch`
+
+**Template answer:**
+> `Int(input)!` crashes if `input` is not a valid integer. Replace with `if let n = Int(input) { ... } else { ... }` or `let n = Int(input) ?? 0`.
+
+## Last-minute drills
+- Predict D, E, G, I in your head.
+- Rewrite `let port = Int(envVar)!` three safe ways.
+- One sentence: why struct copies, class shares.
+- Write a `switch` over `Result2`.
+</script>
+
+<script type="text/markdown" id="md-02-swiftui-layout">
+# SwiftUI Layout & View Decomposition - Study Guide
+
+Closed-book target: given a wireframe, write SwiftUI code using basic UI
+(VStack, HStack, ZStack, Text, Image, Spacer). Memorize the patterns below.
+
+---
+
+## 1. Stacks
+
+```swift
+VStack(alignment: .leading, spacing: 12) { ... }   // top -> bottom
+HStack(alignment: .center,  spacing: 8)  { ... }   // left -> right
+ZStack(alignment: .topTrailing)          { ... }   // back -> front (overlay)
+```
+
+- VStack alignment: `.leading | .center | .trailing`
+- HStack alignment: `.top | .center | .bottom | .firstTextBaseline`
+- ZStack alignment: `.top, .topLeading, .topTrailing, .center, .bottom, .bottomLeading, ...`
+- `spacing:` is the gap between children. Default is system spacing; pass `0` to remove gaps.
+
+Children listed top-to-bottom in source = top-to-bottom on screen for VStack
+(left-to-right for HStack, back-to-front for ZStack).
+
+## 2. Spacer
+
+```swift
+HStack {
+    Text("Left")
+    Spacer()              // pushes the next view to the right
+    Text("Right")
+}
+```
+
+- `Spacer()` expands to fill all available space along the stack's axis.
+- Use it to push content to one edge, or space items apart evenly (multiple Spacers).
+- In `VStack`, `Spacer()` pushes vertically; in `HStack`, horizontally.
+
+## 3. Text and modifiers
+
+```swift
+Text("Hello")
+    .font(.title)                          // .largeTitle, .title, .title2, .title3,
+                                           // .headline, .subheadline, .body, .callout,
+                                           // .caption, .caption2
+    .font(.system(size: 32, weight: .bold))
+    .fontWeight(.bold)                     // or .bold(), .italic()
+    .foregroundColor(.blue)                // older API
+    .foregroundStyle(.secondary)           // newer; Color or hierarchical style
+    .multilineTextAlignment(.center)       // .leading | .center | .trailing
+    .lineLimit(2)                          // truncate after N lines
+    .padding()                             // 16pt all sides
+    .padding(.horizontal, 24)
+```
+
+Real combos from homework:
+
+```swift
+Text("My Grades").font(.title).bold()
+Text("Rocket").font(.title.weight(.bold))
+Text("PowerFul").foregroundStyle(.secondary).font(.title3.weight(.medium))
+Text("4 Credit").font(.caption2).foregroundColor(.gray)
+```
+
+## 4. Image
+
+System (SF Symbols) vs asset:
+
+```swift
+Image(systemName: "person.fill")           // SF Symbol
+Image("puppy")                             // asset in Media.xcassets
+```
+
+Sizing an asset image - ALWAYS `.resizable()` BEFORE `.frame(...)`:
+
+```swift
+Image("puppy")
+    .resizable()                           // MUST come before frame
+    .scaledToFill()                        // or .scaledToFit() / .aspectRatio(contentMode: .fill)
+    .frame(width: 160, height: 200)
+    .clipped()                             // crop overflow when using scaledToFill
+    .cornerRadius(12)
+```
+
+For SF Symbols, set size via `.font(.system(size: 60))`:
+
+```swift
+Image(systemName: "sun.max.fill")
+    .font(.system(size: 60))
+    .foregroundStyle(.red)
+```
+
+Circle avatar pattern:
+
+```swift
+Image("avatar")
+    .resizable()
+    .scaledToFill()
+    .frame(width: 80, height: 80)
+    .clipShape(Circle())
+```
+
+## 5. Frame, padding, background - ORDER MATTERS
+
+Modifiers wrap from inside out. Each modifier returns a new view.
+
+```swift
+// padding INSIDE background -> background expands to include padding
+Text("A").padding().background(Color.yellow)
+
+// background INSIDE padding -> background hugs text, padding outside
+Text("A").background(Color.yellow).padding()
+```
+
+Same logic with `.frame` and `.cornerRadius`:
+
+```swift
+Text("Random")
+    .foregroundColor(.white)
+    .frame(width: 150, height: 50)
+    .background(Color.orange)
+    .cornerRadius(10)
+```
+
+If `.cornerRadius` comes BEFORE `.background`, the background re-paints square corners on top.
+
+## 6. Frame fill modifier
+
+```swift
+.frame(maxWidth: .infinity)        // expand horizontally to fill parent
+.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+```
+
+Used for full-width cards:
+
+```swift
+VStack { ... }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 20)
+    .background(Color.blue)
+    .cornerRadius(15)
+```
+
+## 7. Color, background, divider, shapes
+
+```swift
+Color.blue                                 // Color is a View; fills available space
+Color(red: 215/255, green: 202/255, blue: 184/255)
+    .ignoresSafeArea()                     // bleed under status bar / home indicator
+
+Divider()                                  // thin horizontal line
+Rectangle().fill(.gray).frame(height: 1)   // custom-thickness line
+RoundedRectangle(cornerRadius: 12).fill(.blue)
+Circle().stroke(Color.red, lineWidth: 2)
+```
+
+## 8. Decomposition strategy (the exam recipe)
+
+1. Look at the WHOLE screen: vertical layout (VStack) or overlays (ZStack background)?
+2. Slice into ROWS top-to-bottom -> each row is a child of the outer VStack.
+3. Each row with multiple side-by-side items becomes an HStack.
+4. Inside an HStack, a column of stacked text becomes a nested VStack(alignment: .leading).
+5. To push something to an edge, insert `Spacer()`.
+6. Add modifiers per-element (font, color), then per-container (padding, background).
+
+Pseudo-template:
+
+```swift
+VStack(alignment: .leading, spacing: 16) {
+    HStack { ... }                            // header row
+    HStack { ... }                            // content row
+    Spacer()                                  // push remaining content up
+}
+.padding()
+```
+
+---
+
+## Worked example A - Profile card (avatar + name + bio + button)
+
+Wireframe:
+
+```
++----------------------------------+
+| [O]  Jane Doe                    |
+|      iOS Developer               |
+|                                  |
+|  Loves SwiftUI, coffee, and cats.|
+|                                  |
+|        [  Follow  ]              |
++----------------------------------+
+```
+
+Code:
+
+```swift
+VStack(alignment: .leading, spacing: 16) {
+    HStack(spacing: 12) {
+        Image("avatar")
+            .resizable()
+            .scaledToFill()
+            .frame(width: 64, height: 64)
+            .clipShape(Circle())
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Jane Doe")
+                .font(.title2)
+                .bold()
+            Text("iOS Developer")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        Spacer()
+    }
+
+    Text("Loves SwiftUI, coffee, and cats.")
+        .font(.body)
+        .multilineTextAlignment(.leading)
+
+    HStack {
+        Spacer()
+        Button(action: { }) {
+            Text("Follow")
+                .foregroundColor(.white)
+                .frame(width: 140, height: 44)
+                .background(Color.blue)
+                .cornerRadius(22)
+        }
+        Spacer()
+    }
+}
+.padding()
+.background(Color(.systemBackground))
+.cornerRadius(16)
+```
+
+## Worked example B - Simple list row (icon + title/subtitle + grade)
+
+From hw/5 MyGradesView - subject row:
+
+```swift
+HStack {
+    VStack(alignment: .leading) {
+        Text("4 Credit")
+            .font(.caption2)
+            .foregroundColor(.gray)
+        Text("Math")
+            .font(.headline)
+    }
+    Spacer()                    // pushes grade to the right edge
+    Text("3.0")
+        .font(.title3)
+        .bold()
+        .foregroundColor(.blue)
+}
+.padding(.vertical, 4)
+```
+
+## Worked example C - Settings row (icon + label + chevron)
+
+Wireframe:
+
+```
+[bell]  Notifications              >
+```
+
+```swift
+HStack(spacing: 12) {
+    Image(systemName: "bell.fill")
+        .font(.title3)
+        .foregroundStyle(.orange)
+        .frame(width: 28)
+    Text("Notifications")
+        .font(.body)
+    Spacer()
+    Image(systemName: "chevron.right")
+        .foregroundStyle(.secondary)
+}
+.padding(.horizontal, 16)
+.padding(.vertical, 12)
+.background(Color(.secondarySystemBackground))
+.cornerRadius(10)
+```
+
+## Worked example D - ZStack overlay card
+
+Image + date badge top-right + title bottom-left (from hw/3 TravelPackage):
+
+```swift
+ZStack(alignment: .topTrailing) {
+    Image("mountain")
+        .resizable()
+        .frame(width: 320, height: 320)
+        .clipped()
+
+    // Date badge (top-trailing because of ZStack alignment)
+    VStack {
+        Text("20").font(.title.weight(.bold))
+        Text("Nov").fontWeight(.semibold)
+    }
+    .padding(8)
+    .background(.white)
+    .cornerRadius(12)
+    .padding(12)
+
+    // Title (bottom-leading) - VStack+Spacer trick
+    VStack {
+        Spacer()
+        HStack {
+            VStack(alignment: .leading) {
+                Text("Mountain")
+                    .foregroundStyle(.white)
+                    .font(.title.weight(.bold))
+                Text("$$$$$$")
+                    .foregroundStyle(.white)
+                    .font(.title3.weight(.semibold))
+            }
+            .padding(16)
+            Spacer()
+        }
+    }
+    .frame(width: 320, height: 320)
+}
+```
+
+---
+
+## Two-card stat row (from hw/5 MyGradesView)
+
+```swift
+HStack(spacing: 15) {
+    VStack {
+        Text("GPAX").font(.caption).bold()
+        Text("3.25").font(.system(size: 34, weight: .bold))
+    }
+    .foregroundColor(.white)
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 20)
+    .background(Color.blue)
+    .cornerRadius(15)
+
+    VStack {
+        Text("Credits").font(.caption).bold()
+        Text("36").font(.system(size: 34, weight: .bold))
+    }
+    .foregroundColor(.white)
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 20)
+    .background(Color.green)
+    .cornerRadius(15)
+}
+.padding()
+```
+
+Key trick: `.frame(maxWidth: .infinity)` on each card makes them split the row equally.
+
+---
+
+## Common pitfalls (graders look for these)
+
+1. Forgetting `.resizable()` before `.frame()` on `Image("asset")` - the image keeps its
+   intrinsic size and ignores your frame.
+2. `.padding().background()` vs `.background().padding()` - first paints background OUTSIDE
+   the padded area (large coloured block); second paints background hugging the content
+   (small coloured block, white margin around it).
+3. Putting `.cornerRadius()` before `.background()` - background re-draws square corners on top.
+   Always: frame -> background -> cornerRadius.
+4. Using `.frame(width:height:)` on an SF Symbol expecting it to grow - SF Symbols size with
+   `.font(.system(size:))` or `.imageScale(.large)`. To stretch them, add `.resizable()` first.
+5. Forgetting `Spacer()` when pushing to edges - without Spacer, HStack centres its content.
+6. ZStack alignment confusion - `alignment:` only applies to children that do not themselves
+   fill the ZStack. To pin a corner inside a fixed-size ZStack, wrap in
+   `VStack { Spacer(); HStack { content; Spacer() } }`.
+7. `foregroundColor` vs `foregroundStyle` - both work; `foregroundStyle` is newer.
+8. `.scaledToFill()` without `.clipped()` lets the image draw outside its frame.
+
+---
+
+## Drill plan (last 4 days)
+
+- Day 1: redraw 3 wireframes from memory, no peeking.
+- Day 2: practice Image modifiers.
+- Day 3: practice complex HStack/VStack nesting.
+- Day 4: timed practice - one wireframe in 10 minutes, code-only on paper.
+</script>
+
+<script type="text/markdown" id="md-03-state-interaction">
+# State Management & User Interaction (SwiftUI)
+
+Final exam prep — Class 3 (Interactions) + Class 10 (MVVM/Observation) + HW4-6.
+
+## 1. Mental model
+
+```
+Action  --update-->  State  --re-render-->  View
+(tap, edit)         (@State)              (body recomputed)
+```
+
+- View is a `struct` (value type). Cannot mutate stored properties directly.
+- Mutable state must be wrapped (`@State`, `@Binding`, etc.).
+- When state changes, SwiftUI re-invokes `body`.
+- Constants in a View use `let` (no wrapper).
+
+## 2. Property Wrappers
+
+| Wrapper       | Owns?       | Where                       | Use for                                 |
+|---------------|-------------|-----------------------------|-----------------------------------------|
+| `@State`      | Yes (View)  | inside View struct          | Local mutable value                     |
+| `@Binding`    | No (proxy)  | inside child View struct    | Read/write parent's `@State`            |
+| `@Observable` | —           | on `class` (model)          | Reference-type model (iOS 17+)          |
+| `@Bindable`   | No          | inside View, on @Observable | Bindings to model properties            |
+| `@Environment`| No          | inside View                 | Read system/shared values               |
+
+- `@State` should be `private`, always `var`, always initialized.
+- Pass binding with `$value`.
+
+## 3. `@State` — local state
+
+```swift
+struct CounterView: View {
+    @State private var count = 0
+    var body: some View {
+        VStack {
+            Text("Count: \(count)")
+            Button("Increment") { count += 1 }
+            Button("Reset")     { count = 0 }
+        }
+    }
+}
+```
+
+## 4. `@Binding` — child mutates parent's state
+
+```swift
+struct ParentView: View {
+    @State private var isOn = false
+    var body: some View {
+        VStack {
+            Text(isOn ? "ON" : "OFF")
+            ToggleRow(isOn: $isOn)
+        }
+    }
+}
+
+struct ToggleRow: View {
+    @Binding var isOn: Bool
+    var body: some View { Toggle("Power", isOn: $isOn) }
+}
+```
+
+Mistakes: forgetting `$`; using `@State` in child instead of `@Binding`; default value on `@Binding`.
+
+## 5. TextField + binding
+
+```swift
+struct GreetingView: View {
+    @State private var name = ""
+    var body: some View {
+        VStack {
+            TextField("Your name", text: $name)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { print("submitted: \(name)") }
+            Text("Hello, \(name.isEmpty ? "stranger" : name)!")
+        }
+    }
+}
+```
+
+## 6. Common widgets
+
+```swift
+@State private var flavor = "Original"
+@State private var on     = false
+@State private var sweet  = 50.0
+@State private var qty    = 1
+
+Toggle("Cherry", isOn: $on)
+Slider(value: $sweet, in: 0...100)
+Stepper("Qty: \(qty)", value: $qty, in: 0...10)
+Picker("Flavor", selection: $flavor) {
+    ForEach(["Original","Chocolate","Strawberry"], id: \.self) { Text($0) }
+}.pickerStyle(.menu)
+```
+
+## 7. `@Observable` (iOS 17+, MVVM)
+
+```swift
+import Observation
+import SwiftUI
+
+@Observable
+final class TodoStore {
+    var items: [String] = []
+    var draft: String = ""
+    func add() {
+        let t = draft.trimmingCharacters(in: .whitespaces)
+        guard !t.isEmpty else { return }
+        items.append(t); draft = ""
+    }
+    func remove(at offsets: IndexSet) { items.remove(atOffsets: offsets) }
+}
+
+struct TodoView: View {
+    @State private var store = TodoStore()
+    var body: some View {
+        VStack {
+            HStack {
+                TextField("New todo", text: $store.draft)
+                Button("Add") { store.add() }
+            }
+            List {
+                ForEach(store.items, id: \.self) { Text($0) }
+                    .onDelete(perform: store.remove)
+            }
+        }
+    }
+}
+```
+
+## 8. Form with validation
+
+```swift
+struct SignUp: View {
+    @State private var email = ""
+    @State private var pwd   = ""
+    var isValid: Bool { email.contains("@") && pwd.count >= 6 }
+    var body: some View {
+        Form {
+            TextField("Email", text: $email)
+                .textInputAutocapitalization(.never)
+            SecureField("Password", text: $pwd)
+            Button("Sign up") { }
+                .disabled(!isValid)
+        }
+    }
+}
+```
+</script>
+
+<script type="text/markdown" id="md-04-lists-navigation">
+# 04 - Lists & Navigation (SwiftUI)
+
+Final-exam cheat sheet. iOS 16+ assumed (NavigationStack, value-based nav).
+
+## 1. ScrollView vs List
+
+| | ScrollView + VStack/ForEach | List |
+|---|---|---|
+| Style | Plain content, you control look | Built-in row chrome, separators, swipe actions |
+| Lazy? | No (eager unless LazyVStack) | Yes (rows recycled) |
+| Use when | Custom layouts, mixed widgets | Homogeneous data rows, edit/delete/move |
+
+## 2. List basics
+
+```swift
+List { Text("A"); Text("B"); Text("C") }                   // static
+List(countries, id: \.self) { item in Text(item) }         // explicit id
+struct Item: Identifiable { let id = UUID(); let name: String }
+List(items) { item in Text(item.name) }                    // Identifiable
+```
+
+### ForEach in List (required for .onDelete / .onMove)
+```swift
+List {
+    ForEach(items) { item in Text(item.name) }
+        .onDelete  { offsets in items.remove(atOffsets: offsets) }
+        .onMove    { src, dst in items.move(fromOffsets: src, toOffset: dst) }
+}
+.toolbar { EditButton() }
+```
+
+## 3. Identifiable / Hashable
+```swift
+struct Message: Identifiable, Hashable {
+    var id = UUID()
+    var value: String
+}
+```
+- `Identifiable` -> `List(items) { ... }` with no `id:`.
+- `Hashable` -> `NavigationLink(value:)` + `.navigationDestination(for:)`.
+
+## 4. NavigationStack (iOS 16+, replaces NavigationView)
+
+### a) Closure-based push
+```swift
+NavigationStack {
+    List(items) { item in
+        NavigationLink("See \(item.name)") { DetailView(item: item) }
+    }
+    .navigationTitle("Items")
+}
+```
+
+### b) Value-based (preferred)
+```swift
+NavigationStack {
+    List(items) { item in NavigationLink(item.name, value: item) }
+        .navigationDestination(for: Item.self)   { DetailView(item: $0) }
+}
+```
+
+### c) Programmatic via Bool
+```swift
+@State var showPageTwo = false
+NavigationStack {
+    Button("Show details") { showPageTwo = true }
+        .navigationDestination(isPresented: $showPageTwo) { SecondScreen() }
+}
+```
+
+## 5. Modal presentation
+
+```swift
+@State var showSheet = false
+@State var userMessage: Message?
+
+Button("Open") { showSheet = true }
+    .sheet(isPresented: $showSheet) { SecondScreen() }
+
+.sheet(item: $userMessage) { msg in SecondScreen(message: msg) }   // opens iff non-nil
+.fullScreenCover(isPresented: $showSheet) { SecondScreen() }
+```
+
+### Dismiss from inside
+```swift
+struct SecondScreen: View {
+    @Environment(\.dismiss) var dismiss
+    var body: some View { Button("Close") { dismiss() } }
+}
+```
+</script>
+
+<script type="text/markdown" id="md-05-api-storage">
+# 05 — API Calls & On-Device Storage (AppStorage)
+
+Open-book practical. Tests evaluated by Unit Tests. Two pillars:
+1. Fetch JSON from an HTTP API with URLSession + Codable.
+2. Persist values with @AppStorage (UserDefaults wrapper).
+
+## 1. The 4-step API recipe (memorize)
+
+```swift
+func load() async {
+    guard let url = URL(string: "https://api.example.com/items") else { return }
+    do {
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let decoder = JSONDecoder()
+        let result = try decoder.decode([Item].self, from: data)
+        self.items = result
+    } catch {
+        self.errorMessage = error.localizedDescription
+    }
+}
+```
+
+Steps: (1) build URL, (2) do/catch, (3) try await URLSession.shared.data(from:), (4) JSONDecoder().decode(T.self, from: data).
+
+## 2. Codable
+
+A type that conforms to `Codable` (= `Decodable & Encodable`) decodes/encodes automatically when its stored properties are also Codable.
+
+```swift
+struct User: Codable {
+    let id: Int
+    let name: String
+    let email: String
+}
+```
+
+## 3. Calling async from a SwiftUI View — `.task`
+
+```swift
+struct ItemListView: View {
+    @State private var items: [Item] = []
+    @State private var errorMessage: String?
+    var body: some View {
+        List(items) { Text($0.name) }
+            .overlay { if let m = errorMessage { Text(m).foregroundStyle(.red) } }
+            .task { await load() }
+    }
+    func load() async { /* see step 1 */ }
+}
+```
+
+## 4. @AppStorage
+
+Property wrapper around UserDefaults. Auto-persists and re-renders the view.
+Supported: `Bool`, `Int`, `Double`, `String`, `URL`, `Data`, `RawRepresentable` enums.
+
+```swift
+struct SettingsView: View {
+    @AppStorage("isDarkMode") var isDarkMode: Bool = false
+    @AppStorage("username")   var username: String = ""
+    var body: some View {
+        Form {
+            Toggle("Dark mode", isOn: $isDarkMode)
+            TextField("Username", text: $username)
+            Text("Hello, \(username)")
+        }
+    }
+}
+```
+
+## 5. Cheat sheet
+
+```swift
+struct Foo: Codable, Identifiable { let id: Int; let name: String }
+
+func load() async {
+    guard let url = URL(string: API) else { return }
+    do {
+        let (data, _) = try await URLSession.shared.data(from: url)
+        items = try JSONDecoder().decode([Foo].self, from: data)
+    } catch { print(error) }
+}
+.task { await load() }
+
+@AppStorage("key")  var flag: Bool = false
+@AppStorage("name") var name: String = ""
+```
+</script>
+
+<!-- ================= APPLICATION LOGIC ================= -->
+<script>
+    // Configuration for the navigation
+    const files = [
+        { id: 'instruction', title: 'Instruction & Syllabus', icon: '📝' },
+        { id: '01-swift-basics', title: '1. Swift Basics', icon: '⚡' },
+        { id: '02-swiftui-layout', title: '2. SwiftUI Layout', icon: '📱' },
+        { id: '03-state-interaction', title: '3. State & Interaction', icon: '🔄' },
+        { id: '04-lists-navigation', title: '4. Lists & Navigation', icon: '📋' },
+        { id: '05-api-storage', title: '5. API & Storage', icon: '💾' }
+    ];
+
+    const navContainer = document.getElementById('nav-container');
+    const contentDiv = document.getElementById('content');
+
+    // Setup marked options for safe rendering and GitHub flavored markdown
+    marked.setOptions({
+        gfm: true,
+        breaks: true,
+        headerIds: true,
+        highlight: function(code, lang) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+        }
+    });
+
+    // Function to load and render content
+    function loadContent(id) {
+        const scriptTag = document.getElementById('md-' + id);
+        if (!scriptTag) {
+            contentDiv.innerHTML = '<p class="text-red-500">Error: Content not found.</p>';
+            return;
+        }
+        
+        const markdownText = scriptTag.textContent;
+        // Parse markdown to HTML using marked.js
+        contentDiv.innerHTML = marked.parse(markdownText.trim());
+        
+        // Update active state in sidebar
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            if (btn.dataset.id === id) {
+                btn.classList.add('bg-blue-50', 'dark:bg-blue-900/40', 'text-blue-700', 'dark:text-blue-400', 'font-semibold', 'border-blue-200', 'dark:border-blue-800');
+                btn.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-gray-700/50', 'border-transparent', 'font-medium');
+            } else {
+                btn.classList.remove('bg-blue-50', 'dark:bg-blue-900/40', 'text-blue-700', 'dark:text-blue-400', 'font-semibold', 'border-blue-200', 'dark:border-blue-800');
+                btn.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-gray-700/50', 'border-transparent', 'font-medium');
+            }
+        });
+        
+        // Scroll to top
+        document.querySelector('.flex-1').scrollTo(0, 0);
+    }
+
+    // Build sidebar navigation
+    files.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'nav-btn w-full text-left px-4 py-3 rounded-lg transition-all duration-200 border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-transparent font-medium flex items-center gap-3';
+        btn.dataset.id = f.id;
+        
+        // Inner HTML with icon
+        btn.innerHTML = `<span>${f.icon}</span> <span class="truncate">${f.title}</span>`;
+        
+        btn.onclick = () => loadContent(f.id);
+        navContainer.appendChild(btn);
+    });
+
+    // Load the first item by default
+    if (files.length > 0) {
+        loadContent(files[0].id);
+    }
+</script>
+
+</body>
+</html>

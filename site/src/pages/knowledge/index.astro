@@ -1,0 +1,25 @@
+---
+import Sidebar from '../../layouts/Sidebar.astro';
+import pages from '../../data/pages.json';
+
+const entries = Object.entries(pages.knowledge ?? {}).sort(([a], [b]) => a.localeCompare(b));
+---
+
+<Sidebar title="Knowledge - iOS Final Drill" active="/knowledge/">
+  <header class="mb-6">
+    <h1 class="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">Knowledge</h1>
+    <p class="text-sm text-zinc-400">Short summaries - 5 topics.</p>
+  </header>
+  <ul class="space-y-2">
+    {entries.map(([slug, p]) => (
+      <li>
+        <a
+          href={`/knowledge/${slug}`}
+          class="block rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-200 px-4 py-3 text-sm font-medium"
+        >
+          <span class="text-zinc-500 mr-2">{slug}</span>{p.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Sidebar>

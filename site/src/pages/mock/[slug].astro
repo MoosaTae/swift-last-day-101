@@ -1,0 +1,23 @@
+---
+import Sidebar from '../../layouts/Sidebar.astro';
+
+export async function getStaticPaths() {
+  const data = (await import('../../data/pages.json')).default;
+  return Object.entries(data.mock ?? {}).map(([slug, page]) => ({
+    params: { slug },
+    props: { page },
+  }));
+}
+
+const { slug } = Astro.params;
+const { page } = Astro.props;
+---
+
+<Sidebar title={`${page.title} - Mock Exam`} active={`/mock/${slug}`}>
+  <header class="mb-6">
+    <h1 class="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">
+      <span class="text-zinc-500 mr-2">{slug}</span>{page.title}
+    </h1>
+  </header>
+  <article class="card-md" set:html={page.html}></article>
+</Sidebar>

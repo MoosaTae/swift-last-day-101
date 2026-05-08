@@ -1,0 +1,18 @@
+---
+import Sidebar from '../layouts/Sidebar.astro';
+import DrillDeck from '../components/DrillDeck';
+import cards from '../data/cards.json';
+---
+
+<Sidebar title={`iOS Final Drill - ${cards.length} cards`} active="/">
+  <header class="mb-6">
+    <h1 class="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">
+      iOS Final Drill
+    </h1>
+    <p class="text-sm text-zinc-400">
+      {cards.length} flashcards from <code class="text-zinc-300">exercise/*.md</code>. Active recall, hide-by-default.
+    </p>
+  </header>
+
+  <DrillDeck cards={cards} client:only="react" />
+</Sidebar>

@@ -1,0 +1,25 @@
+---
+import Sidebar from '../../layouts/Sidebar.astro';
+import pages from '../../data/pages.json';
+
+const entries = Object.entries(pages.mock ?? {}).sort(([a], [b]) => a.localeCompare(b));
+---
+
+<Sidebar title="Mock Exam - iOS Final Drill" active="/mock/">
+  <header class="mb-6">
+    <h1 class="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">Mock Exam</h1>
+    <p class="text-sm text-zinc-400">Full mock paper - written (45 min) + practical (120 min). Self-grade with the answer keys.</p>
+  </header>
+  <ul class="space-y-2">
+    {entries.map(([slug, p]) => (
+      <li>
+        <a
+          href={`/mock/${slug}`}
+          class="block rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-200 px-4 py-3 text-sm font-medium"
+        >
+          <span class="text-zinc-500 mr-2">{slug}</span>{p.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Sidebar>
