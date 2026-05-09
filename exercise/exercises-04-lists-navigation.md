@@ -26,28 +26,6 @@ Compile error: `Initializer 'init(_:rowContent:)' requires that 'String' conform
 
 ---
 
-### A2. List of `[String]` with `id: \.self`
-
-```swift
-struct ContentView: View {
-    let fruits = ["Apple", "Banana", "Cherry"]
-    var body: some View {
-        List(fruits, id: \.self) { fruit in
-            Text(fruit)
-        }
-    }
-}
-```
-
-<details><summary>Answer</summary>
-
-Compiles and renders three rows: "Apple", "Banana", "Cherry". `String` is `Hashable`, so each value is its own id. Works fine as long as values are unique.
-
-> **React:** like `fruits.map(f => <li key={f}>{f}</li>)` — using the value itself as the key. Same caveat: only safe when values are unique.
-</details>
-
----
-
 ### A3. `Identifiable` struct list — each row renders
 
 ```swift
@@ -215,6 +193,37 @@ struct ContentView: View {
 The navigation bar shows no title (it appears empty). `.navigationTitle` must be applied to a view *inside* the `NavigationStack`, not on the `NavigationStack` itself. The modifier here attaches to the stack's container, which has no nav-bar context to write to. Fix: move `.navigationTitle("Outside")` onto the `List`.
 
 > **React:** SwiftUI-specific — no clean React analog. Closest mental model: `<Head>` from Next.js must live inside the page component, not above the `<App>`.
+</details>
+
+---
+
+### A9. Computed `id` from a domain field (Codable-stable identity)
+
+```swift
+struct Country: Codable, Identifiable, Hashable {
+    let cca2: String
+    let name: String
+    var id: String { cca2 }
+}
+
+let json = #"[{"cca2":"TH","name":"Thailand"},{"cca2":"JP","name":"Japan"}]"#
+    .data(using: .utf8)!
+let a = try JSONDecoder().decode([Country].self, from: json)
+let b = try JSONDecoder().decode([Country].self, from: json)
+print(a[0].id == b[0].id)
+print(Set(a + b).count)
+```
+
+<details><summary>Answer</summary>
+
+```
+true
+2
+```
+
+Why: `var id: String { cca2 }` is a *computed* property. Two decodes of the same JSON produce structs with the same `cca2`, so they compare equal. `Set(a + b)` deduplicates to 2 elements (`TH`, `JP`). 
+
+Compare to the common but **wrong** alternative `let id = UUID()`: every fresh decode would yield a brand-new UUID, so `a[0].id != b[0].id`, `Set(a + b).count == 4`, and `List` would re-animate every row on every reload. Always derive `id` from a stable domain field (`cca2`, `slug`, `imdbID`) when one exists. Mock 1 / Mock 4 practical Task 2 pattern.
 </details>
 
 ---
@@ -691,6 +700,183 @@ Reasons:
 
 ---
 
+### B11. `.onDelete` + `ForEach`-in-`List` + `EditButton`
+
+```swift
+struct ItemsView: View {
+    @State private var items = ["Buy milk", "Walk dog", "Read"]
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.self) { item in
+                Text(item)
+            }
+            .onDelete { offsets in
+                items.remove(atOffsets: offsets)
+            }
+            .navigationTitle("Items")
+        }
+    }
+}
+```
+
+This won't compile. Fix and add an `EditButton` in the toolbar so the user can enter edit mode.
+
+<details><summary>Improved code & reasons</summary>
+
+```swift
+struct ItemsView: View {
+    @State private var items = ["Buy milk", "Walk dog", "Read"]
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(items, id: \.self) { item in
+                    Text(item)
+                }
+                .onDelete { offsets in
+                    items.remove(atOffsets: offsets)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    EditButton()
+                }
+            }
+            .navigationTitle("Items")
+        }
+    }
+}
+```
+
+Reasons:
+
+1. `.onDelete` must be attached to a **`ForEach` inside a `List`**, not to the `List(_:)` initializer form. The data-driven `List(items)` shorthand has no `ForEach` to hang `.onDelete` on, so the modifier silently fails or doesn't compile depending on context.
+2. The `ForEach` must be inside an explicit `List { ... }` block (the trailing-closure form) so the row chrome supports swipe-to-delete.
+3. `EditButton()` toggles the list into edit mode (showing red `-` deleters on every row) and changes its label between "Edit" and "Done" automatically.
+
+This is the canonical practical-exam shape (Mock 1 / Mock 4 / Mock 5 Task 3). Mock 3 written B1 anchor pattern.
+</details>
+
+---
+
+### B12. Wrapper hygiene on a row receiving an `@Observable` store
+
+```swift
+import Observation
+
+@Observable
+final class HabitStore {
+    var habits: [String] = []
+    func toggle(_ name: String) { /* ... */ }
+}
+
+struct HabitRow: View {
+    @StateObject var store: HabitStore   // wrong wrapper
+    let name: String
+    var body: some View {
+        Button(name) { store.toggle(name) }
+    }
+}
+
+struct HabitListView: View {
+    @State private var store = HabitStore()
+    var body: some View {
+        List(store.habits, id: \.self) { name in
+            HabitRow(store: store, name: name)
+        }
+    }
+}
+```
+
+The row uses the wrong wrapper for an `@Observable` class. Fix.
+
+<details><summary>Improved code & reasons</summary>
+
+```swift
+import Observation
+
+@Observable
+final class HabitStore {
+    var habits: [String] = []
+    func toggle(_ name: String) { /* ... */ }
+}
+
+struct HabitRow: View {
+    @Bindable var store: HabitStore   // read+write receiver
+    let name: String
+    var body: some View {
+        Button(name) { store.toggle(name) }
+    }
+}
+
+struct HabitListView: View {
+    @State private var store = HabitStore()
+    var body: some View {
+        List(store.habits, id: \.self) { name in
+            HabitRow(store: store, name: name)
+        }
+    }
+}
+```
+
+Three issues:
+
+1. `@StateObject` is part of the legacy `ObservableObject` stack and does not compose with `@Observable`. It also creates a NEW instance per row, so each row would have its own `HabitStore` instead of sharing the parent's.
+2. The parent already owns the store via `@State`. The row receives the same instance; it must NOT re-own it.
+3. The correct iOS-17 contract: **owner uses `@State`, read+write receivers use `@Bindable`, read-only receivers use plain `let`.** Since `HabitRow` calls `store.toggle(name)` (a write), `@Bindable` is the right wrapper.
+
+Mock 4 written B-Q anchor pattern.
+</details>
+
+---
+
+### B13. `NavigationView` to `NavigationStack` + value-based destination at root
+
+```swift
+struct ContentView: View {
+    let items = ["A", "B", "C"]
+    var body: some View {
+        NavigationView {
+            List(items, id: \.self) { item in
+                NavigationLink(item) {
+                    Text("Detail: \(item)")
+                }
+            }
+        }
+    }
+}
+```
+
+Migrate to the iOS-17 navigation API.
+
+<details><summary>Improved code & reasons</summary>
+
+```swift
+struct ContentView: View {
+    let items = ["A", "B", "C"]
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.self) { item in
+                NavigationLink(item, value: item)
+            }
+            .navigationDestination(for: String.self) { item in
+                Text("Detail: \(item)")
+            }
+        }
+    }
+}
+```
+
+Three issues fixed:
+
+1. `NavigationView` is deprecated in iOS 16+ and has ambiguous push behavior on iPad/macOS (often becomes a split view).
+2. The eager `NavigationLink { destination }` form rebuilds the destination every time the list re-renders, even when no row is tapped. The value-based form is lazy.
+3. The `.navigationDestination(for:)` modifier MUST be attached to the **root** view inside the `NavigationStack` (here, the `List`), not inside a pushed child. Registering it deeper silently fails — the link will not push anything when tapped.
+
+Mock 3 written B2/B3 anchor pattern.
+</details>
+
+---
+
 ## Section C — View Decomposition (3 list-screen wireframes)
 
 ### C1. Contacts list
@@ -923,6 +1109,230 @@ struct AlbumScreen: View {
 }
 ```
 
+</details>
+
+---
+
+### C4. `.task { await store.load() }` wired to a List
+
+Starter:
+```swift
+@Observable
+final class CountryStore {
+    var countries: [Country] = []
+    func load() async {
+        // TODO: fetch and decode
+    }
+}
+
+struct Country: Codable, Identifiable, Hashable {
+    let cca2: String
+    let name: String
+    var id: String { cca2 }
+}
+
+struct CountriesView: View {
+    @State private var store = CountryStore()
+    var body: some View {
+        // TODO: NavigationStack + List driven by store.countries,
+        //       triggered by .task
+        EmptyView()
+    }
+}
+```
+
+Your task: wire the load.
+
+<details><summary>Reference solution</summary>
+
+```swift
+@Observable
+final class CountryStore {
+    var countries: [Country] = []
+    var errorMessage: String?
+
+    func load() async {
+        guard let url = URL(string: "https://restcountries.com/v3.1/all") else {
+            errorMessage = "Bad URL"
+            return
+        }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            countries = try JSONDecoder().decode([Country].self, from: data)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+struct CountriesView: View {
+    @State private var store = CountryStore()
+
+    var body: some View {
+        NavigationStack {
+            List(store.countries) { c in
+                NavigationLink(value: c) {
+                    Text(c.name)
+                }
+            }
+            .navigationDestination(for: Country.self) { c in
+                Text("Welcome to \(c.name)").font(.title)
+            }
+            .navigationTitle("Countries")
+            .task { await store.load() }
+        }
+    }
+}
+```
+
+Key points:
+- The owner uses `@State private var store = CountryStore()` (NOT `@StateObject` — that's the legacy form).
+- `.task` runs an async closure when the view appears AND auto-cancels on disappear. It is the canonical place for first-load fetches.
+- Don't put `.task` inside `.onAppear` — `.onAppear`'s closure is synchronous, so you'd need `Task { ... }` inside it AND lose cancellation. `.task` does both jobs cleanly.
+- `Country.id` is computed from `cca2`, so re-loads don't re-animate every row.
+</details>
+
+---
+
+### C5. `.sheet(isPresented:)` + `@Environment(\.dismiss)` add-flow
+
+Starter:
+```swift
+struct ItemsView: View {
+    @State private var items: [String] = []
+    @State private var showingAdd = false
+    var body: some View {
+        // TODO: NavigationStack + List + toolbar "+" button
+        //       presents AddItemView in a .sheet
+        EmptyView()
+    }
+}
+
+struct AddItemView: View {
+    var onSave: (String) -> Void
+    // TODO
+    var body: some View { EmptyView() }
+}
+```
+
+Your task: wire the toolbar "+" button to present a sheet that has Cancel/Save toolbar buttons. Save appends to `items` and dismisses; Cancel dismisses without saving.
+
+<details><summary>Reference solution</summary>
+
+```swift
+struct ItemsView: View {
+    @State private var items: [String] = []
+    @State private var showingAdd = false
+
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.self) { Text($0) }
+                .navigationTitle("Items")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showingAdd = true } label: {
+                            Image(systemName: "plus")
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingAdd) {
+                    AddItemView { name in
+                        items.append(name)
+                    }
+                }
+        }
+    }
+}
+
+struct AddItemView: View {
+    @State private var name = ""
+    @Environment(\.dismiss) private var dismiss
+    var onSave: (String) -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack {
+                TextField("Name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                Spacer()
+            }
+            .navigationTitle("New Item")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        onSave(name)
+                        dismiss()
+                    }
+                    .disabled(name.isEmpty)
+                }
+            }
+        }
+    }
+}
+```
+
+Key points:
+- `.sheet(isPresented: $showingAdd) { AddItemView { ... } }` — the binding controls visibility, the closure builds the modal content.
+- `@Environment(\.dismiss)` is how a presented sheet closes itself, regardless of who presented it.
+- The parent passes `onSave` as a closure so the child does not need to know how the parent stores the data.
+- Wrapping the sheet content in its own `NavigationStack` gives it a title bar + toolbar buttons.
+- Disabling Save when `name.isEmpty` is the canonical mock-graded validation pattern.
+
+Mock 1 / Mock 4 / Mock 5 practical Add-flow pattern.
+</details>
+
+---
+
+### C6. `Section { } header: { }` for grouped lists
+
+Starter:
+```swift
+struct GroupedListView: View {
+    let fruits = ["Apple", "Banana"]
+    let veggies = ["Kale", "Carrot"]
+    var body: some View {
+        // TODO: List with two sections, each with a header
+        EmptyView()
+    }
+}
+```
+
+Your task: render two sections with headers "Fruit" and "Vegetable" in a grouped list style.
+
+<details><summary>Reference solution</summary>
+
+```swift
+struct GroupedListView: View {
+    let fruits = ["Apple", "Banana"]
+    let veggies = ["Kale", "Carrot"]
+    var body: some View {
+        List {
+            Section {
+                ForEach(fruits, id: \.self) { Text($0) }
+            } header: {
+                Text("Fruit")
+            }
+
+            Section {
+                ForEach(veggies, id: \.self) { Text($0) }
+            } header: {
+                Text("Vegetable")
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+}
+```
+
+Key points:
+- `Section` takes a content closure plus optional `header:` and `footer:` trailing closures.
+- `.listStyle(.insetGrouped)` gives the iOS-Settings-style grouped chrome with rounded section cards. `.plain` gives flat sections; `.sidebar` gives expandable headers.
+- For dynamic data, replace the two literal sections with a `ForEach(categories)` that renders one `Section` per category.
 </details>
 
 ---
@@ -1220,151 +1630,4 @@ Notes:
 </details>
 
 ---
-
-### D5. Make a list of strings compile without changing the data type
-
-Starter:
-
-```swift
-struct ContentView: View {
-    let cities = ["Bangkok", "Tokyo", "Seoul"]
-    var body: some View {
-        // compile error: String not Identifiable
-        List(cities) { city in
-            Text(city)
-        }
-    }
-}
-```
-
-Your task: make this compile. You may not wrap the strings in a struct; the data must stay `[String]`.
-
-<details><summary>Reference solution</summary>
-
-```swift
-struct ContentView: View {
-    let cities = ["Bangkok", "Tokyo", "Seoul"]
-    var body: some View {
-        List(cities, id: \.self) { city in
-            Text(city)
-        }
-    }
-}
-```
-
-Reasons:
-- `String` is `Hashable`, so `\.self` is a valid `KeyPath<String, String>` for the `id:` parameter.
-- Watch out: if the array can contain duplicate strings, runtime SwiftUI will warn about duplicate IDs. In that case wrap in a struct or iterate `cities.indices` instead.
-
-For comparison — `NavigationView` (legacy, pre-iOS 16):
-
-```swift
-NavigationView {
-    List(cities, id: \.self) { Text($0) }
-}
-// Still works on older iOS but exam answers should prefer NavigationStack.
-```
-
-> **React:** `cities.map(c => <li key={c}>{c}</li>)` — using the value as key. Same risk: duplicates break diffing.
-</details>
-
----
-
-## Section E — View Decomposition (row + parent extraction)
-
-### E1. Contacts list with row decomposition
-
-```
-+------------------------------------------------+
-| Contacts                                       |
-+------------------------------------------------+
-| [O]  Alice Brown                            >  |
-|      +66 81 234 5678                           |
-+------------------------------------------------+
-| [O]  Charlie Davis                          >  |
-|      charlie@example.com                       |
-+------------------------------------------------+
-| [O]  Eva Fox                                >  |
-|      +66 88 777 1212                           |
-+------------------------------------------------+
-
-[O] = circular avatar, name is bold, subtitle is gray,
-      `>` is the trailing chevron, tapping pushes detail.
-```
-
-Your task: split this screen into three pieces.
-
-1. A `Contact: Identifiable` model with `name` and `subtitle` (phone or email).
-2. A `struct ContactRow: View` that takes a single `Contact` and renders one row: avatar on the left (`Image(systemName: "person.circle.fill")`), name + subtitle stacked vertically in the middle (name `.headline`, subtitle `.secondary`), trailing chevron.
-3. A `struct ContactsList: View` that wraps a `NavigationStack` + `List` of contacts, each row a `NavigationLink` that pushes a placeholder `ContactDetail` view.
-
-<details><summary>Reference solution</summary>
-
-```swift
-struct Contact: Identifiable, Hashable {
-    let id = UUID()
-    let name: String
-    let subtitle: String
-}
-
-struct ContactRow: View {
-    let contact: Contact
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "person.circle.fill")
-                .resizable()
-                .frame(width: 44, height: 44)
-                .foregroundStyle(.blue)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(contact.name).font(.headline)
-                Text(contact.subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-struct ContactDetail: View {
-    let contact: Contact
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(contact.name).font(.largeTitle).bold()
-            Text(contact.subtitle).foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding()
-        .navigationTitle(contact.name)
-    }
-}
-
-struct ContactsList: View {
-    let contacts = [
-        Contact(name: "Alice Brown",   subtitle: "+66 81 234 5678"),
-        Contact(name: "Charlie Davis", subtitle: "charlie@example.com"),
-        Contact(name: "Eva Fox",       subtitle: "+66 88 777 1212")
-    ]
-
-    var body: some View {
-        NavigationStack {
-            List(contacts) { contact in
-                NavigationLink(value: contact) {
-                    ContactRow(contact: contact)
-                }
-            }
-            .navigationDestination(for: Contact.self) { ContactDetail(contact: $0) }
-            .navigationTitle("Contacts")
-        }
-    }
-}
-```
-
-Notes: the trailing `>` chevron is drawn automatically by `NavigationLink` inside a `List`, so the manual `Image(systemName: "chevron.right")` in `ContactRow` is technically redundant — keep it only if you want the row to look the same outside a `NavigationLink` context (e.g., previews, search results). `Contact` is `Hashable` so `NavigationLink(value:)` + `.navigationDestination(for:)` compile.
-
-> **React/Next:** `<ContactRow contact={c} />` inside `contacts.map(...)` plus a `pages/contacts/[id].tsx` for the detail. SwiftUI's value-based navigation collapses the routing table into one `.navigationDestination(for: Contact.self)` modifier.
-</details>
 

@@ -1,6 +1,6 @@
 # Topic 7 — Code Improvement: Practice
 
-A drill pack of 15 small Swift snippets for the closed-book Code Improvement section. Name the failure mode in one short phrase, rewrite the snippet to be safe and idiomatic, and justify the fix in one sentence.
+A drill pack for the closed-book Code Improvement section. Mocks routinely demand 2-4 distinct issues per snippet (1-1.5 pt each). For each card: enumerate every issue, explain WHY it is wrong, then rewrite. The compound cards (Q12-Q15) mirror the multi-bug mock format.
 
 ---
 
@@ -31,8 +31,6 @@ func ageInTenYears(from text: String) -> Int {
 ```
 
 Why: `Int(_:)` is a failable initializer, so replace `!` with `if let` / `guard let` / `??` to turn a bad string into a graceful default instead of a runtime crash.
-
-> **React/TS:** TS analog — `parseInt(text)!` or `Number(text)` followed by no NaN check. Same fix: `const n = Number(text); if (Number.isNaN(n)) return 0;`.
 </details>
 
 ### Q2
@@ -63,85 +61,9 @@ func describe(_ any: Any) -> String {
 ```
 
 Why: `as?` returns an `Optional` so the failure path is recoverable; `as!` is the reference-type counterpart to `Int("abc")!` — same red flag, same fix.
-
-> **React/TS:** `as` in TS is compile-time only — runtime needs a real check: `if (typeof v === "string") { ... }`. `as?` is the runtime-checked equivalent.
 </details>
 
 ### Q3
-
-```swift
-struct Cart {
-    var items = []          // what type is this?
-    mutating func add(_ name: String, price: Double) {
-        items.append((name, price))
-    }
-    func total() -> Double {
-        items.reduce(0) { $0 + $1.1 }   // compiler complains
-    }
-}
-```
-
-What is wrong with this code, and how should it be improved?
-
-<details><summary>Answer</summary>
-
-- `var items = []` infers `[Any]`, which disables most operations on the elements.
-- `$1.1` has no known tuple shape on `Any`, so subscripting fails to compile.
-- Promote the implicit tuple to a named struct so each field is documented.
-
-```swift
-struct LineItem {
-    let name: String
-    let price: Double
-}
-
-struct Cart {
-    var items: [LineItem] = []
-    mutating func add(_ name: String, price: Double) {
-        items.append(LineItem(name: name, price: price))
-    }
-    func total() -> Double {
-        items.reduce(0) { $0 + $1.price }
-    }
-}
-```
-
-Why: leaving the element type to inference produces `[Any]`, which is almost never what you want; annotate the array or use a named struct so the meaning of each field is explicit.
-
-> **React/TS:** TS infers `never[]` from `let items = []` — same kind of "useless type" gotcha. Annotate `items: LineItem[] = []` or use a named interface.
-</details>
-
-### Q4
-
-```swift
-func tax(on amount: Double) -> Double {
-    var rate = 0.07
-    var result = amount * rate
-    return result
-}
-```
-
-What is wrong with this code, and how should it be improved?
-
-<details><summary>Answer</summary>
-
-- `rate` and `result` are assigned exactly once, so `var` misleads the reader.
-- `var` also prevents the compiler from treating these bindings as constants.
-
-```swift
-func tax(on amount: Double) -> Double {
-    let rate = 0.07
-    let result = amount * rate
-    return result
-}
-```
-
-Why: `let` documents immutability and lets the compiler optimize; reach for `var` only when something is genuinely reassigned.
-
-> **React/JS:** identical — prefer `const` over `let`. Same `prefer-const` ESLint rule.
-</details>
-
-### Q5
 
 ```swift
 class Coordinate {
@@ -176,11 +98,9 @@ print(origin.x)        // 0 — independent copy
 ```
 
 Why: SwiftUI and the Swift idiom prefer value semantics for plain data; reach for `class` only when you actually need shared identity.
-
-> **React/JS:** JS only has reference semantics — every "copy" is really an alias unless you spread (`{...origin}`). React's immutability rules are the workaround Swift gets free with structs.
 </details>
 
-### Q6
+### Q4
 
 ```swift
 struct Order {
@@ -223,57 +143,9 @@ func badge(for o: Order) -> String {
 ```
 
 Why: an enum closes the set of valid values and `switch` forces every case to be handled, so misspellings stop compiling and new cases flag every site that needs an update.
-
-> **React/TS:** equivalent to a string-literal union — `type Status = "pending" | "paid" | "shipped" | "cancelled"` with exhaustive switch via the `never` trick.
 </details>
 
-### Q7
-
-```swift
-final class FeedLoader {
-    var items: [String] = []
-    func reload() {
-        Task {
-            let next = await fetch()
-            self.items = next
-            self.didFinish()
-        }
-    }
-    func fetch() async -> [String] { [] }
-    func didFinish() { }
-}
-```
-
-What is wrong with this code, and how should it be improved?
-
-<details><summary>Answer</summary>
-
-- The `Task { ... }` closure captures `self` strongly, keeping the `FeedLoader` alive while the task runs.
-- For long-running or repeating closures stored on `self` this creates a retain cycle.
-- Add `[weak self]` plus a `guard let self`.
-
-```swift
-final class FeedLoader {
-    var items: [String] = []
-    func reload() {
-        Task { [weak self] in
-            guard let self else { return }
-            let next = await self.fetch()
-            self.items = next
-            self.didFinish()
-        }
-    }
-    func fetch() async -> [String] { [] }
-    func didFinish() { }
-}
-```
-
-Why: closures inside reference types capture `self` strongly; `[weak self]` breaks the cycle and `guard let self` re-binds it for the body without sprinkling `?.` everywhere.
-
-> **React/JS:** JS GC handles cyclic references automatically — this exact bug doesn't exist. The closest analog is using `AbortController` to cancel pending fetches when a component unmounts to avoid setting state on an unmounted component.
-</details>
-
-### Q8
+### Q5
 
 ```swift
 struct PrimeListView: View {
@@ -307,11 +179,9 @@ struct PrimeListView: View {
 ```
 
 Why: `body` must stay cheap because it is called frequently; the view's job is to describe UI, not to recompute heavy data on every render.
-
-> **React:** identical lesson — wrap with `useMemo(() => computePrimes(), [])` or hoist the constant outside the component. Heavy work in render is the same anti-pattern.
 </details>
 
-### Q9
+### Q6
 
 ```swift
 import Observation
@@ -334,7 +204,7 @@ What is wrong with this code, and how should it be improved?
 <details><summary>Answer</summary>
 
 - `@ObservedObject` works only on `ObservableObject` classes; `@Observable` requires `@State` (or a stored `@Bindable` parameter).
-- Initializing the model inline with `@ObservedObject` would re-create it on every parent re-render.
+- Initializing the model inline with `@ObservedObject` would re-create it on every parent re-render, losing state.
 
 ```swift
 import Observation
@@ -352,12 +222,10 @@ struct CounterView: View {
 }
 ```
 
-Why: with the iOS 17 Observation framework, the view owns an `@Observable` model via `@State`, which guarantees one instance per view identity that survives re-renders.
-
-> **React:** equivalent to `useState(() => new Store())` (lazy init, persists across renders) vs `const store = new Store()` written directly in the component (rebuilt every render).
+Why: with the iOS 17 Observation framework, the view owns an `@Observable` model via `@State`, which guarantees one instance per view identity that survives re-renders. Children that need to write into the model should receive it as `@Bindable var model: CounterModel`.
 </details>
 
-### Q10
+### Q7
 
 ```swift
 struct GreetView: View {
@@ -389,11 +257,9 @@ struct GreetView: View {
 ```
 
 Why: the SwiftUI mental model is Action -> State -> Re-render, so side effects belong in event handlers or `.task`/`.onAppear`, not in `body`.
-
-> **React:** the **exact same bug** — calling `setState` during render causes "Too many re-renders" infinite loop. Same fix: derive computed values in JSX, never `setState` in render.
 </details>
 
-### Q11
+### Q8
 
 ```swift
 @MainActor
@@ -446,43 +312,9 @@ struct Post: Codable { let title: String }
 ```
 
 Why: `try?` is appropriate only when you genuinely do not care which failure happened; for network calls, `do/catch` lets you tell the user *why* it failed.
-
-> **React/JS:** `try { ... } catch {}` with an empty catch is the exact same anti-pattern. Catch the error, store it in state, and render the message.
 </details>
 
-### Q12
-
-```swift
-struct SettingsView: View {
-    @State private var darkMode = false        // resets every launch
-    var body: some View {
-        Toggle("Dark mode", isOn: $darkMode)
-    }
-}
-```
-
-What is wrong with this code, and how should it be improved?
-
-<details><summary>Answer</summary>
-
-- `darkMode` is local view state, so toggling it works for the session but resets on next launch.
-- User settings should persist via `@AppStorage`.
-
-```swift
-struct SettingsView: View {
-    @AppStorage("darkMode") private var darkMode: Bool = false
-    var body: some View {
-        Toggle("Dark mode", isOn: $darkMode)
-    }
-}
-```
-
-Why: `@AppStorage` is the SwiftUI wrapper around `UserDefaults` — it auto-saves on every change and re-renders when the underlying default changes, while still acting like `@State` for binding.
-
-> **React:** swap `useState(false)` for `useLocalStorage("darkMode", false)`. Same one-line refactor.
-</details>
-
-### Q13
+### Q9
 
 ```swift
 struct GuestList: View {
@@ -527,11 +359,9 @@ struct GuestList: View {
 ```
 
 Why: `ForEach`/`List` need stable, unique IDs to diff rows correctly, and `id: \.self` works only when values are guaranteed unique.
-
-> **React:** identical "Each child in a list should have a unique key prop" warning when two children share a key. Same fix.
 </details>
 
-### Q14
+### Q10
 
 ```swift
 final class WeatherVM: ObservableObject {
@@ -574,11 +404,9 @@ final class WeatherVM: ObservableObject {
 ```
 
 Why: SwiftUI requires `@Published` mutations on the main actor; `@MainActor` plus `async` URLSession delivers the result on the main actor without any manual `DispatchQueue` hop.
-
-> **React/JS:** JS is single-threaded so the off-main-thread bug doesn't exist, but the modernization lesson is identical: replace callback-style XHR with `await fetch(...)`.
 </details>
 
-### Q15
+### Q11
 
 ```swift
 struct RootView: View {
@@ -619,6 +447,233 @@ struct RootView: View {
 ```
 
 Why: `NavigationStack` plus `NavigationLink(_, value:)` and `.navigationDestination(for:)` separates *what to navigate to* from *how to render the destination*, unlocking deep linking and programmatic navigation.
+</details>
 
-> **React/Next:** like upgrading from Pages router to App router — value-based destinations are the typed-route-segments equivalent.
+### Q12 — Modifier-order trap (compound)
+
+```swift
+struct PillView: View {
+    var body: some View {
+        Text("Hi")
+            .cornerRadius(12)
+            .background(.blue)
+            .frame(width: 200, height: 60)
+            .padding()
+    }
+}
+```
+
+The visual result is wrong on every dimension. Enumerate the issues and fix.
+
+<details><summary>Answer</summary>
+
+Three independent issues:
+
+1. **`.cornerRadius` runs before `.background`** — corner-rounding is applied to the un-coloured Text first, then `.background(.blue)` paints a fresh rectangle BEHIND it. Result: square blue corners.
+2. **`.frame(width: 200, height: 60)` runs after `.background`** — the colored area is sized to the original Text, then a 200x60 transparent frame is drawn around it. Result: small blue pill floating inside a big invisible box.
+3. **`.padding` runs last** — the padding wraps the already-framed view, adding outer space, but the colour does not extend into the padding.
+
+The rule is **inside-out**: content -> sizing -> coloring -> rounding -> spacing.
+
+```swift
+struct PillView: View {
+    var body: some View {
+        Text("Hi")
+            .frame(width: 200, height: 60)
+            .background(.blue)
+            .cornerRadius(12)
+            .padding()
+    }
+}
+```
+
+Why: each SwiftUI modifier wraps the prior view in a new view, so visual order = nesting order. `.background` paints whatever is currently sized; `.cornerRadius` clips whatever is currently coloured. Mock 4 B2 anchor pattern.
+</details>
+
+### Q13 — Codable key/date mismatch (compound)
+
+```swift
+struct Post: Codable {
+    let displayName: String
+    let createdAt: Date
+    let likeCount: Int
+}
+
+func loadPosts() async -> [Post] {
+    let url = URL(string: "https://api.example.com/posts")!
+    let (data, _) = try! await URLSession.shared.data(from: url)
+    let posts = try! JSONDecoder().decode([Post].self, from: data)
+    return posts
+}
+
+// Server returns:
+// [{ "display_name": "Tae", "created_at": 1715225400, "like_count": 4 }]
+```
+
+Decoding always crashes. Enumerate the issues and fix.
+
+<details><summary>Answer</summary>
+
+Four independent issues:
+
+1. **Key mismatch** — server uses snake_case (`display_name`, `created_at`, `like_count`) but the struct uses camelCase. Vanilla `JSONDecoder` does not bridge these. Either declare `CodingKeys` or set `decoder.keyDecodingStrategy = .convertFromSnakeCase`.
+2. **Date strategy missing** — server sends Unix epoch seconds (a number), not an ISO8601 string. Default `dateDecodingStrategy` expects `Date.timeIntervalSinceReferenceDate` doubles, so decode fails. Set `decoder.dateDecodingStrategy = .secondsSince1970`.
+3. **`try!` on the network call** — any I/O error (offline, DNS, timeout) crashes the app. Use `try` inside `do/catch` and propagate via `throws` or return optional.
+4. **No HTTP status-code check** — even on success, a 4xx/5xx body might be HTML or an error JSON that decodes-and-throws. Guard `(response as? HTTPURLResponse)?.statusCode` is in `200..<300`.
+
+```swift
+struct Post: Codable {
+    let displayName: String
+    let createdAt: Date
+    let likeCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
+        case createdAt   = "created_at"
+        case likeCount   = "like_count"
+    }
+}
+
+func loadPosts() async throws -> [Post] {
+    let url = URL(string: "https://api.example.com/posts")!
+    let (data, response) = try await URLSession.shared.data(from: url)
+    guard let http = response as? HTTPURLResponse,
+          (200..<300).contains(http.statusCode) else {
+        throw URLError(.badServerResponse)
+    }
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .secondsSince1970
+    return try decoder.decode([Post].self, from: data)
+}
+```
+
+Why: each issue maps to a separate mock-rubric line. Mock 5 B1+B2 anchor pattern.
+</details>
+
+### Q14 — Struct mutation / inout (compound)
+
+```swift
+struct CartItem {
+    var price: Double
+    var qty: Int
+}
+
+func applyDiscount(item: CartItem, amount: Double) {
+    item.price -= amount        // does not compile
+}
+
+var line = CartItem(price: 100, qty: 1)
+applyDiscount(item: line, amount: 10)
+print(line.price)               // expecting 90
+```
+
+Enumerate the issues and fix.
+
+<details><summary>Answer</summary>
+
+Two independent issues:
+
+1. **Cannot mutate a `let` parameter on a value type** — function parameters are `let` by default, and `CartItem` is a struct. The line `item.price -= amount` does not compile.
+2. **Even with `var item = item` shadowing, the caller does not see the change** — structs are value types, so the function would mutate a local copy and the caller's `line.price` would still be `100`.
+
+There are two correct fixes depending on intent:
+
+**Variant 1 — `inout` (mutate caller's copy):**
+
+```swift
+func applyDiscount(item: inout CartItem, amount: Double) {
+    item.price -= amount
+}
+
+var line = CartItem(price: 100, qty: 1)
+applyDiscount(item: &line, amount: 10)
+print(line.price)               // 90
+```
+
+**Variant 2 — return a new struct (functional style, often preferred):**
+
+```swift
+func applyDiscount(item: CartItem, amount: Double) -> CartItem {
+    var copy = item
+    copy.price -= amount
+    return copy
+}
+
+var line = CartItem(price: 100, qty: 1)
+line = applyDiscount(item: line, amount: 10)
+print(line.price)               // 90
+```
+
+Why: contrast with classes — if `CartItem` were a class, the original code would compile and mutate `line` directly because both names share the same reference. Mock 1 B2 anchor pattern.
+</details>
+
+### Q15 — Sibling-shared VM (compound)
+
+```swift
+import Observation
+
+@Observable
+final class Counter {
+    var n = 0
+}
+
+struct ChildA: View {
+    @StateObject var counter = Counter()
+    var body: some View { Button("A: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ChildB: View {
+    @StateObject var counter = Counter()
+    var body: some View { Button("B: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ParentView: View {
+    var body: some View {
+        VStack {
+            ChildA()
+            ChildB()
+        }
+    }
+}
+```
+
+The two children should share one counter, but they don't. Enumerate the issues and fix.
+
+<details><summary>Answer</summary>
+
+Three independent issues:
+
+1. **Each child owns its own VM** — `@StateObject var counter = Counter()` in `ChildA` and `ChildB` creates two separate instances. The siblings cannot share state because they don't share a model.
+2. **`@StateObject` does not work with `@Observable`** — `@StateObject` is for `ObservableObject` conformers. With the iOS 17 Observation framework, the owner uses `@State` and receivers use `@Bindable` (or plain `let`).
+3. **Ownership is in the wrong place** — to share state across siblings, the parent must own the model and pass it down.
+
+```swift
+@Observable
+final class Counter {
+    var n = 0
+}
+
+struct ChildA: View {
+    @Bindable var counter: Counter
+    var body: some View { Button("A: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ChildB: View {
+    @Bindable var counter: Counter
+    var body: some View { Button("B: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ParentView: View {
+    @State private var counter = Counter()
+    var body: some View {
+        VStack {
+            ChildA(counter: counter)
+            ChildB(counter: counter)
+        }
+    }
+}
+```
+
+Why: the iOS-17 stack is **owner uses `@State`, receiver uses `@Bindable`**. Both children now reference the same `Counter` instance held by the parent, so incrementing in either updates both labels. Mock 4 B3 anchor pattern.
 </details>

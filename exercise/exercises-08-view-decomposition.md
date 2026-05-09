@@ -601,3 +601,155 @@ struct BeforeAfterView: View {
 
 Why: outer HStack — two columns side by side, so the top level splits horizontally first. Each column is a VStack of three children. `.frame(maxWidth: .infinity)` on each column gives the equal 50/50 split.
 </details>
+
+### Q13
+
+```text
++----------------------------------------+
+| +----------------------+               |
+| | Hello there          |               |
+| +----------------------+               |
+|                                        |
+|             +------------------------+ |
+|             | Hi! How are you?       | |
+|             +------------------------+ |
++----------------------------------------+
+```
+
+Regions:
+- Two chat bubbles, vertically stacked
+- First bubble: leading-aligned, gray background
+- Second bubble: trailing-aligned, blue background, white text
+
+Allowed modifiers: `VStack`, `HStack`, `Text`, `Spacer`, `.padding`, `.background`, `.cornerRadius`, `.foregroundColor`, `.font`, `spacing`, `alignment`.
+
+<details><summary>Answer</summary>
+
+```swift
+struct ChatBubblesView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Hello there")
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(16)
+                Spacer()
+            }
+            HStack {
+                Spacer()
+                Text("Hi! How are you?")
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(16)
+            }
+        }
+    }
+}
+```
+
+Why: outer VStack — two bubbles stacked vertically. Each bubble is its own HStack: a leading bubble uses `[ Text, Spacer ]`, a trailing bubble uses `[ Spacer, Text ]`. The Spacer is what asymmetrically pins the bubble to one edge.
+
+**Modifier order matters**: `.padding -> .background -> .cornerRadius`. If `.cornerRadius` ran before `.background`, the colored area would have square corners (the rounded shape would be applied to the un-colored view, then the background would paint a fresh rectangle behind it). This is also a Code-Improvement mock pattern — same lesson, different section.
+</details>
+
+### Q14
+
+```text
++----------------------------------+
+|  ( O )   Jane Doe                |
+|          @janedoe                |
++----------------------------------+
+```
+
+Regions:
+- Leading: circular avatar (asset `"avatar"`)
+- Right column: bold name + secondary handle
+
+Allowed modifiers: `VStack`, `HStack`, `Text`, `Image`, `Spacer`, `.resizable`, `.scaledToFill`, `.frame`, `.clipShape`, `.font`, `.bold`, `.foregroundStyle`, `spacing`.
+
+<details><summary>Answer</summary>
+
+```swift
+struct AvatarRowView: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Image("avatar")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Jane Doe").font(.headline).bold()
+                Text("@janedoe").foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+}
+```
+
+Why: outer HStack — avatar sits next to a two-line VStack. The trailing Spacer pushes content to the leading edge.
+
+**Modifier order matters**: `.resizable -> .scaledToFill -> .frame -> .clipShape`. `.resizable` must come first or the bitmap renders at intrinsic size. `.scaledToFill` then `.frame` controls the final box. `.clipShape(Circle())` is applied LAST so the already-sized image is cropped to a circle. Wrong order produces an overflowing or non-circular avatar.
+</details>
+
+### Q15
+
+```text
++----------------------------------------+
+| [person]    Profile               >    |
+| [bell]      Notifications         >    |
+| [lock]      Privacy               >    |
+| [?]         Help                  >    |
++----------------------------------------+
+```
+
+Regions:
+- Four rows, each with a leading SF Symbol + label + trailing chevron
+- Critical: all four leading icons must align in a fixed column, even though
+  `lock` is narrow and `bell` is wide
+
+Allowed modifiers: `VStack`, `HStack`, `Text`, `Image`, `Spacer`, `.frame`, `.padding`, `.font`, `.foregroundStyle`, `spacing`.
+
+<details><summary>Answer</summary>
+
+```swift
+struct SettingsListView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "person").frame(width: 28)
+                Text("Profile")
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            HStack {
+                Image(systemName: "bell").frame(width: 28)
+                Text("Notifications")
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            HStack {
+                Image(systemName: "lock").frame(width: 28)
+                Text("Privacy")
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            HStack {
+                Image(systemName: "questionmark.circle").frame(width: 28)
+                Text("Help")
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+    }
+}
+```
+
+Why: outer VStack — four rows stacked vertically. Each row is an HStack of `[ icon, label, Spacer, chevron ]`.
+
+**Key trick**: `.frame(width: 28)` on every leading `Image` forces a uniform icon column. SF Symbol intrinsic widths differ — without the fixed frame, `bell` (wide) would shift its label slightly right and `lock` (narrow) would shift its label slightly left, breaking the visual column. This recurs across mock papers (Mock 1, Mock 4 settings screens).
+</details>

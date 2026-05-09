@@ -1,31 +1,10 @@
 # Topic 6 — Output Prediction: Practice
 
-Pure Swift, console only. For each snippet, predict EXACTLY what is printed. Watch for `Optional(...)` wrappers, integer vs double division, value vs reference semantics, closure capture, defer ordering, didSet/willSet, and `for-in` snapshots.
+Pure Swift, console only. For each snippet, predict EXACTLY what is printed. Watch for `Optional(...)` wrappers, value vs reference semantics, closure capture, parameter shadowing, dictionary pipelines, and enum associated values.
 
 ## Section A — Output Prediction
 
 ### Q1
-
-```swift
-let a = 7
-let b = 2
-print(a / b)
-print(Double(a) / Double(b))
-```
-
-<details><summary>Answer</summary>
-
-```
-3
-3.5
-```
-
-Why: `Int / Int` is integer division (truncates toward zero), so `7 / 2 = 3`. Promoting both sides to `Double` gives true floating-point division `3.5`.
-
-> **React/JS:** JS has no integer-division by default — `7/2 === 3.5`. To get Swift-style integer division, use `Math.floor(7/2)` or `Math.trunc(7/2)`.
-</details>
-
-### Q2
 
 ```swift
 let s: String? = "hi"
@@ -48,7 +27,7 @@ Why: printing an `Optional` directly shows the `Optional(...)` wrapper. `??` unw
 > **React/TS:** no `Optional(...)` wrapper in JS — `console.log("hi")` prints `hi`, `console.log(undefined)` prints `undefined`. `??` works the same.
 </details>
 
-### Q3
+### Q2
 
 ```swift
 let age: Int? = 5
@@ -68,7 +47,7 @@ Why: the famous string-interpolation gotcha. Interpolating an `Int?` directly em
 > **React/TS:** `\`age=${age}\`` produces `age=5` — JS template literals don't have an "Optional wrapper" — this gotcha is Swift-only.
 </details>
 
-### Q4
+### Q3
 
 ```swift
 struct Point { var x = 0 }
@@ -89,7 +68,7 @@ Why: `struct` is a value type. `var b = a` copies, so `b.x = 7` does not touch `
 > **React/JS:** to get the same independence: `const b = {...a}`. Plain `const b = a` aliases.
 </details>
 
-### Q5
+### Q4
 
 ```swift
 class Point { var x = 0 }
@@ -110,7 +89,7 @@ Why: `class` is a reference type. `a` and `b` point to the same instance, and `l
 > **React/JS:** this is JS's default for objects/classes. Mutating shared references is exactly why React imposes immutability discipline.
 </details>
 
-### Q6
+### Q5
 
 ```swift
 var n = 1
@@ -133,33 +112,7 @@ Why: closures capture `var`s by reference, so each call reads `n`'s current valu
 > **React/JS:** identical — `let n = 1; const f = () => console.log(n);`. This is the source of stale-closure bugs in `useEffect`/`useCallback`.
 </details>
 
-### Q7
-
-```swift
-func go() {
-    print("A")
-    defer { print("B") }
-    defer { print("C") }
-    print("D")
-}
-go()
-```
-
-<details><summary>Answer</summary>
-
-```
-A
-D
-C
-B
-```
-
-Why: `defer` blocks run in reverse (LIFO) order when the enclosing scope exits. Both defers fire after `print("D")` and after the function returns; the later-registered `C` runs before the earlier-registered `B`.
-
-> **React/JS:** no native `defer`. Closest: stacking `try { ... } finally { ... }` blocks, or pushing onto an array of cleanup functions and iterating in reverse — what `useEffect`'s cleanup does.
-</details>
-
-### Q8
+### Q6
 
 ```swift
 var xs = [1, 2, 3]
@@ -178,76 +131,10 @@ print(ys)
 
 Why: arrays are value types in Swift. `var ys = xs` copies, so `ys.append(4)` does not modify `xs`.
 
-> **React/JS:** opposite default — `const ys = xs; ys.push(4)` mutates `xs` too. To get Swift-style: `const ys = [...xs]`. This is the React "always spread before mutating" rule.
+> **React/JS:** opposite default — `const ys = xs; ys.push(4)` mutates `xs` too. To get Swift-style: `const ys = [...xs]`.
 </details>
 
-### Q9
-
-```swift
-var counts: [String: Int] = [:]
-let words = ["a", "b", "a", "c", "a"]
-for w in words {
-    counts[w, default: 0] += 1
-}
-print(counts["a"] ?? 0)
-print(counts["z"] ?? -1)
-```
-
-<details><summary>Answer</summary>
-
-```
-3
--1
-```
-
-Why: `dict[key, default: 0] += 1` is the idiomatic counter pattern. `a` appears 3 times. `"z"` is missing, so `counts["z"]` is `nil` and `??` falls back to `-1`.
-
-> **React/JS:** `counts[w] = (counts[w] ?? 0) + 1` — same pattern, no `default:` shortcut.
-</details>
-
-### Q10
-
-```swift
-for i in stride(from: 1, through: 10, by: 3) {
-    print(i, terminator: " ")
-}
-print()
-```
-
-<details><summary>Answer</summary>
-
-```
-1 4 7 10 
-
-```
-
-Why: `stride(from: 1, through: 10, by: 3)` yields 1, 4, 7, 10 (10 is included because it lands exactly on a step). Each value is printed with a trailing space; the bare `print()` at the end emits one newline.
-
-> **React/JS:** equivalent to `for (let i = 1; i <= 10; i += 3) process.stdout.write(\`${i} \`); console.log();`. `through:` = `<=`; `to:` would be `<`.
-</details>
-
-### Q11
-
-```swift
-var sum = 0
-for i in 1...6 where i % 2 == 0 {
-    sum += i
-}
-print(sum)
-```
-
-<details><summary>Answer</summary>
-
-```
-12
-```
-
-Why: the `where` clause filters to even values in `1...6`, namely 2, 4, 6. Their sum is 12.
-
-> **React/JS:** no `where` in for-of. Equivalent: `[1,2,3,4,5,6].filter(i => i % 2 === 0).reduce((a,b) => a+b, 0)` or an `if` inside the loop.
-</details>
-
-### Q12
+### Q7
 
 ```swift
 let name: String? = "Tae"
@@ -264,10 +151,10 @@ inside: Tae
 outside: Tae
 ```
 
-Why: `if let name = name` shadows the outer `name` only inside the block. Outside, `name` is still the original optional, which is `"Tae"` here, so `?? "nil"` unwraps to `Tae`. Note that `"nil"` would only appear if the original had been `nil`.
+Why: `if let name = name` shadows the outer `name` only inside the block. Outside, `name` is still the original optional, which is `"Tae"` here, so `?? "nil"` unwraps to `Tae`. The literal string `"nil"` would only appear if the original had been `nil`.
 </details>
 
-### Q13
+### Q8
 
 ```swift
 func first(_ s: String?) -> String {
@@ -288,93 +175,9 @@ empty
 ```
 
 Why: `guard let s, !s.isEmpty` short-circuits on both nil and empty string. Only `"hello"` survives, and `s.first!` yields the `Character` `h`, wrapped back into a `String`.
-
-> **React/JS:** equivalent: `if (!s) return "empty"; return s[0];` — JS strings are already character-indexable.
 </details>
 
-### Q14
-
-```swift
-struct Bag {
-    var items: [String] = [] {
-        didSet { print("now \(items.count)") }
-    }
-}
-var b = Bag()
-b.items.append("x")
-b.items.append("y")
-b.items.removeLast()
-```
-
-<details><summary>Answer</summary>
-
-```
-now 1
-now 2
-now 1
-```
-
-Why: `didSet` fires on every write that mutates the property, including `append` and `removeLast` on a stored array (because mutating an array on a struct counts as writing the whole property).
-
-> **React/JS:** closest is `useEffect(() => { console.log("now", items.length) }, [items])` — fires after every state change. JS doesn't have property observers without Proxy.
-</details>
-
-### Q15
-
-```swift
-struct Temp {
-    var c: Double = 0 {
-        willSet { print("will \(c) -> \(newValue)") }
-        didSet  { print("did  \(oldValue) -> \(c)") }
-    }
-}
-var t = Temp()
-t.c = 25
-t.c = 30
-```
-
-<details><summary>Answer</summary>
-
-```
-will 0.0 -> 25.0
-did  0.0 -> 25.0
-will 25.0 -> 30.0
-did  25.0 -> 30.0
-```
-
-Why: `willSet` runs before the new value is stored; inside it, the property still holds the old value and `newValue` holds the incoming value. `didSet` runs after; the property now holds the new value and `oldValue` holds what was there before. `Double` literals print with a trailing `.0`.
-</details>
-
-### Q16
-
-```swift
-protocol Greeter { func greet() }
-extension Greeter {
-    func greet() { print("hello from default") }
-}
-struct A: Greeter {}
-struct B: Greeter {
-    func greet() { print("hello from B") }
-}
-let g1: Greeter = A()
-let g2: Greeter = B()
-g1.greet()
-g2.greet()
-```
-
-<details><summary>Answer</summary>
-
-```
-hello from default
-hello from B
-```
-
-Why: when a conforming type does not implement a protocol requirement, the extension's default is used. When the type provides its own implementation, the type's version wins via dynamic dispatch on the protocol requirement.
-
-> **React/TS:** TS interfaces can't have defaults. Closest analog: an abstract class with method overrides, or a base mixin object that subclasses override.
-</details>
-
-### Q17
+### Q9
 
 ```swift
 func makeCounter() -> () -> Int {
@@ -386,20 +189,23 @@ func makeCounter() -> () -> Int {
 }
 let c = makeCounter()
 print(c(), c(), c())
+let d = makeCounter()
+print(d(), c())
 ```
 
 <details><summary>Answer</summary>
 
 ```
 1 2 3
+1 4
 ```
 
-Why: the inner closure captures the local `var n` by reference, so `n` survives past `makeCounter`'s return and increments across calls. `print(c(), c(), c())` evaluates the three calls left-to-right, producing `1 2 3` separated by spaces.
+Why: each call to `makeCounter()` produces a fresh closure that owns its own captured `var n`. `c` and `d` therefore have independent state — `d` starts again at `1` while `c` continues from where it left off (now `4`).
 
-> **React/JS:** classic JS closure factory: `function makeCounter() { let n = 0; return () => ++n; }`. Identical mechanic.
+> **React/JS:** classic JS closure factory. Identical mechanic.
 </details>
 
-### Q18
+### Q10
 
 ```swift
 struct SBox { var v = 0 }
@@ -418,10 +224,10 @@ print(arr[0].v, snapshot[0].v)
 
 Why: `Array` and `SBox` are both value types, so `let snapshot = arr` makes a deep copy of the array and its struct elements. Mutating `arr[0].v` afterward leaves `snapshot[0].v` untouched at its earlier value of 9.
 
-> **React/JS:** opposite default — `const snapshot = arr` shares; even `[...arr]` only shallow-copies. Deep snapshots need `structuredClone(arr)` or `JSON.parse(JSON.stringify(arr))`.
+> **React/JS:** opposite default — even `[...arr]` only shallow-copies. Deep snapshots need `structuredClone(arr)`.
 </details>
 
-### Q19
+### Q11
 
 ```swift
 let raw = ["1", "2", "x", "4"]
@@ -439,27 +245,144 @@ print(mapped)
 ```
 
 Why: `compactMap` drops `nil` results and unwraps the rest, giving plain `Int`s. `map` keeps the `Int?` shape, so each element prints with its optional wrapper (or `nil`).
-
-> **React/JS:** `compactMap` ≈ `raw.map(s => Number(s)).filter(n => !Number.isNaN(n))` — JS has no built-in compactMap, but Lodash provides `_.compact`.
 </details>
 
-### Q20
+### Q12
 
 ```swift
-var xs = [1, 2, 3]
-for x in xs {
-    xs.append(x * 10)
+struct Point { var x = 0 }
+class Box { var n = 0 }
+
+func mutate(p: Point, b: Box) {
+    var p = p          // shadow to allow mutation
+    p.x = 99
+    b.n = 99
 }
-print(xs)
+
+var p = Point()
+let b = Box()
+mutate(p: p, b: b)
+print(p.x, b.n)
 ```
 
 <details><summary>Answer</summary>
 
 ```
-[1, 2, 3, 10, 20, 30]
+0 99
 ```
 
-Why: `Array` is a value type, and `for x in xs` iterates over the value of `xs` captured at loop start. Mutations to `xs` inside the body do not extend the iteration. The body runs three times (for 1, 2, 3) and appends 10, 20, 30 to the live `xs`.
+Why: `Point` is a struct (value type) — the function gets a copy, the `var p = p` shadow lets us mutate that copy locally, but the caller's `p` is untouched. `Box` is a class (reference type) — the function gets the same reference, so `b.n = 99` is visible to the caller. Mock-style trap: students often expect `99 99` (because the function "looks like it mutated p"). The correct answer is `0 99`.
 
-> **React/JS:** `for (const x of xs) xs.push(x*10)` would loop forever — JS arrays are references, so the iterator sees newly-pushed elements. Swift's value semantics prevent this footgun.
+To make the struct mutation visible, the function must declare `inout p: Point` and the caller must call `mutate(p: &p, b: b)`.
+</details>
+
+### Q13
+
+```swift
+class Counter { var n = 0 }
+
+let items: [Counter] = [Counter(), Counter()]
+for item in items {
+    item.n += 10
+}
+print(items[0].n + items[1].n)
+print(items.map(\.n))
+```
+
+<details><summary>Answer</summary>
+
+```
+20
+[10, 10]
+```
+
+Why: `let items` only freezes the array binding (you can't reassign `items` or `append` to it), but the elements are class instances — references — so their `var n` properties are still mutable. The for-loop mutates each instance through its reference. Mock-style trap: students often expect a compiler error from "let + mutation". `let` on a reference-type array does NOT make the elements immutable.
+</details>
+
+### Q14
+
+```swift
+let scores: [String: Int] = ["A": 80, "B": 45, "C": 70, "D": 30, "E": 90]
+
+let top = scores
+    .filter { $0.value >= 50 }
+    .sorted { $0.value > $1.value }
+    .prefix(3)
+    .map { "\($0.key)=\($0.value)" }
+    .joined(separator: ", ")
+
+print(top)
+print("Z=\(scores["Z"] ?? -1)")
+```
+
+<details><summary>Answer</summary>
+
+```
+E=90, A=80, C=70
+Z=-1
+```
+
+Why: filter keeps `A:80`, `C:70`, `E:90` (drops `B:45` and `D:30`). Sort descending by value gives `E:90, A:80, C:70`. Prefix(3) keeps all three. Map formats each entry, `joined` interleaves `, `. The missing key `"Z"` returns `nil`, so `??` falls back to `-1`. This is the canonical mock-anchor pattern (Mock 1 Q4, Mock 5 Q4).
+</details>
+
+### Q15
+
+```swift
+let words = ["apple", "ant", "bear", "banana", "cat", "carrot"]
+
+let grouped = Dictionary(grouping: words, by: { $0.first! })
+let counts = grouped.mapValues { $0.count }
+
+for (k, v) in counts.sorted(by: { $0.key < $1.key }) {
+    print("\(k):\(v)")
+}
+```
+
+<details><summary>Answer</summary>
+
+```
+a:2
+b:2
+c:2
+```
+
+Why: `Dictionary(grouping: by:)` partitions `words` into `["a": ["apple","ant"], "b": ["bear","banana"], "c": ["cat","carrot"]]`. `mapValues { $0.count }` collapses each list to its size. The sort orders the keys alphabetically before printing. Mock 2 Q4 anchor pattern.
+</details>
+
+### Q16
+
+```swift
+enum Event {
+    case login(user: String)
+    case error(code: Int, msg: String)
+    case ping
+}
+
+let events: [Event] = [
+    .login(user: "tae"),
+    .error(code: 404, msg: "not found"),
+    .ping,
+]
+
+for e in events {
+    switch e {
+    case let .login(u):
+        print("login: \(u)")
+    case let .error(code, msg):
+        print("error \(code): \(msg)")
+    case .ping:
+        print("ping")
+    }
+}
+```
+
+<details><summary>Answer</summary>
+
+```
+login: tae
+error 404: not found
+ping
+```
+
+Why: `case let .login(u)` binds the associated value into `u`. `case let .error(code, msg)` destructures both associated values. `.ping` has no payload, so no binding is needed. Mock 5 Q3 anchor pattern.
 </details>

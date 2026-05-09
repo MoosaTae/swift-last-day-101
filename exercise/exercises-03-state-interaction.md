@@ -27,56 +27,6 @@ Each tap mutates `count` via the `@State` wrapper, SwiftUI invalidates the view,
 > **React:** like `const [count, setCount] = useState(0)` then `setCount(c => c + 1)` — same render-on-change model.
 </details>
 
-### A2. Toggle switching between two text labels
-
-```swift
-struct ToggleLabel: View {
-    @State private var isOn = false
-    var body: some View {
-        VStack {
-            Toggle("Power", isOn: $isOn)
-            Text(isOn ? "ON" : "OFF")
-        }
-    }
-}
-```
-
-The user flips the switch on, then off, then on again. What does `Text` show at the end?
-
-<details><summary>Answer</summary>
-
-`ON`
-
-The final state of `isOn` is `true` after the last flip, so the ternary evaluates to `"ON"`.
-
-> **React:** equivalent to controlled `<input type="checkbox" checked={isOn} onChange={e => setIsOn(e.target.checked)} />`.
-</details>
-
-### A3. TextField updating Text below it
-
-```swift
-struct EchoView: View {
-    @State private var name = ""
-    var body: some View {
-        VStack {
-            TextField("Name", text: $name)
-            Text("Hi, \(name)")
-        }
-    }
-}
-```
-
-The user types `Tae` in the field. What does the `Text` show?
-
-<details><summary>Answer</summary>
-
-`Hi, Tae`
-
-`TextField` writes through the `$name` binding on every keystroke, and the `Text` reads the same `@State` so it stays in sync.
-
-> **React:** `$name` is the analog of passing `[value, setValue]`; `<input value={name} onChange={e => setName(e.target.value)} />` does the same two-way wiring.
-</details>
-
 ### A4. Slider value displayed as Int
 
 ```swift
@@ -100,34 +50,6 @@ The user drags the slider so `v` becomes `42.7`. What does the `Text` show?
 `Int(42.7)` truncates toward zero, dropping the fractional part.
 
 > **React:** `Int(42.7)` is `Math.trunc(42.7)` — both drop the fractional part toward zero.
-</details>
-
-### A5. Picker selection changing displayed label
-
-```swift
-struct PickerView: View {
-    @State private var flavor = "Original"
-    let options = ["Original", "Chocolate", "Strawberry"]
-    var body: some View {
-        VStack {
-            Picker("Flavor", selection: $flavor) {
-                ForEach(options, id: \.self) { Text($0) }
-            }
-            Text("Chosen: \(flavor)")
-        }
-    }
-}
-```
-
-The user picks `Chocolate`. What does the `Text` show?
-
-<details><summary>Answer</summary>
-
-`Chosen: Chocolate`
-
-The picker writes its tag (the string itself, because `id: \.self`) into `flavor` via the binding, and the `Text` re-renders.
-
-> **React:** controlled `<select value={flavor} onChange={e => setFlavor(e.target.value)}>` over `options.map(...)`.
 </details>
 
 ### A6. Trap — missing `@State`
@@ -208,31 +130,6 @@ The two-argument `onChange` closure receives the previous and new value each tim
 > **React:** like `useEffect(() => { ... }, [n])`, but the closure receives both `old` and `new` directly — no need for a `useRef` to remember the previous value.
 </details>
 
-### A9. Multi-tap sequence on counter
-
-```swift
-struct MultiTap: View {
-    @State private var n = 0
-    var body: some View {
-        VStack {
-            Text("\(n)")
-            Button("+2") { n += 2 }
-            Button("-1") { n -= 1 }
-            Button("x2") { n *= 2 }
-        }
-    }
-}
-```
-
-Starting from `0`, the user taps `+2`, `+2`, `-1`, `x2`. What does `Text` show?
-
-<details><summary>Answer</summary>
-
-`6`
-
-`0 + 2 = 2`, `2 + 2 = 4`, `4 - 1 = 3`, `3 * 2 = 6`.
-</details>
-
 ### A10. `@StateObject` vs `@ObservedObject` re-creation
 
 ```swift
@@ -272,6 +169,73 @@ The user taps "inc" twice (so both reach 2), then taps "Re-render parent" once. 
 `@StateObject` is created once and tied to the view's identity, so `s.n` survives the parent re-render. `@ObservedObject` initialized inline is rebuilt every time `Inner` is reinitialized, so `o` is replaced by a fresh `Counter()` with `n = 0`. (You will also see two `init Counter` prints originally, then one more on the parent re-render.)
 
 > **React:** `@StateObject` ≈ `useState(() => new Counter())` (lazy init, persists across renders). `@ObservedObject var o = Counter()` ≈ `const o = new Counter()` written directly in the function body — rebuilt every render.
+</details>
+
+### A11. iOS 17 — `@Observable` + `@State` survives parent re-render
+
+```swift
+import Observation
+
+@Observable
+final class Counter {
+    var n = 0
+    init() { print("init Counter") }
+}
+
+struct Inner: View {
+    @State private var counter = Counter()
+    var body: some View {
+        VStack {
+            Text("n=\(counter.n)")
+            Button("inc") { counter.n += 1 }
+        }
+    }
+}
+
+struct Outer: View {
+    @State private var tick = 0
+    var body: some View {
+        VStack {
+            Text("tick=\(tick)")
+            Inner()
+            Button("Re-render parent") { tick += 1 }
+        }
+    }
+}
+```
+
+The user taps "inc" twice, then "Re-render parent" once. What does the `Text` inside `Inner` show, and how many times does `init Counter` print?
+
+<details><summary>Answer</summary>
+
+`n=2`. `init Counter` prints exactly **once**.
+
+Why: with the iOS 17 Observation framework, the owner uses `@State` (NOT `@StateObject` — that's the legacy `ObservableObject` form). `@State` ties the class instance to the view's identity, so the same `Counter` survives across re-renders triggered by the parent's `tick` change. Two increments still leave `counter.n == 2`.
+
+The contract is: **`@Observable` class + owner uses `@State` + receivers use `@Bindable`** (or plain `let` if read-only). This combination replaces the older `ObservableObject` + `@Published` + `@StateObject`/`@ObservedObject` stack.
+</details>
+
+### A12. `@FocusState` auto-focus on appear
+
+```swift
+struct SearchBar: View {
+    @State private var text = ""
+    @FocusState private var focused: Bool
+    var body: some View {
+        TextField("Search", text: $text)
+            .focused($focused)
+            .onAppear { focused = true }
+    }
+}
+```
+
+What happens when this view appears, and what is the keyboard state?
+
+<details><summary>Answer</summary>
+
+The `TextField` becomes the first responder automatically — the keyboard slides up and the cursor blinks inside the field — without the user tapping. Setting `focused = true` programmatically gives focus; setting it to `false` dismisses the keyboard.
+
+Why: `@FocusState` is the only state wrapper that controls keyboard focus. `.focused($focused)` attaches the binding to the field; mutations to `focused` are reflected as focus changes. Tapping a `Cancel` button can call `focused = false` to dismiss the keyboard cleanly.
 </details>
 
 ## Section B — Code Improvement (10 problems)
@@ -595,6 +559,177 @@ Reasons: `@ObservedObject var loader = Loader()` re-runs `Loader()` every time t
 > **React:** same lesson as B5: `useState(() => new Loader())` builds once; `useState(new Loader())` rebuilds and discards every render.
 </details>
 
+### B11. iOS 17 — `@ObservedObject` on an `@Observable` class
+
+```swift
+import Observation
+
+@Observable
+final class HabitStore {
+    var habits: [String] = []
+}
+
+struct HabitListView: View {
+    @ObservedObject var store: HabitStore   // wrong wrapper for iOS 17
+    var body: some View {
+        List(store.habits, id: \.self) { Text($0) }
+    }
+}
+```
+
+<details><summary>Improved code & reasons</summary>
+
+```swift
+import Observation
+
+@Observable
+final class HabitStore {
+    var habits: [String] = []
+}
+
+// Owner (parent):
+struct ParentView: View {
+    @State private var store = HabitStore()
+    var body: some View { HabitListView(store: store) }
+}
+
+// Receiver (read-only): plain `let`.
+// Receiver (read+write): `@Bindable`.
+struct HabitListView: View {
+    let store: HabitStore         // read-only
+    var body: some View {
+        List(store.habits, id: \.self) { Text($0) }
+    }
+}
+```
+
+Reasons:
+
+1. `@ObservedObject` is part of the legacy `ObservableObject`/`@Published` stack. It does not compose with `@Observable` — at best you get no observation tracking; at worst the compiler complains.
+2. The iOS-17 contract is: **owner uses `@State`, read-only receivers use a plain `let`, read-write receivers use `@Bindable var`.**
+3. If `HabitListView` needs to mutate the store (e.g. delete rows), declare `@Bindable var store: HabitStore` and bind via `$store.habits` where required.
+
+Mock 4 written B1 anchor pattern.
+</details>
+
+### B12. iOS 17 — Migrate `ObservableObject` to `@Observable`
+
+```swift
+final class ProfileVM: ObservableObject {
+    @Published var name: String = ""
+    @Published var age: Int = 0
+}
+
+struct ProfileEditView: View {
+    @StateObject var vm = ProfileVM()
+    var body: some View {
+        VStack {
+            TextField("Name", text: $vm.name)
+            Stepper("Age: \(vm.age)", value: $vm.age, in: 0...120)
+        }
+    }
+}
+```
+
+Migrate to the iOS-17 Observation stack and explain the mapping.
+
+<details><summary>Improved code & reasons</summary>
+
+```swift
+import Observation
+
+@Observable
+final class ProfileVM {
+    var name: String = ""
+    var age: Int = 0
+}
+
+struct ProfileEditView: View {
+    @State private var vm = ProfileVM()
+    var body: some View {
+        @Bindable var vm = vm    // optional in-body bindable
+        VStack {
+            TextField("Name", text: $vm.name)
+            Stepper("Age: \(vm.age)", value: $vm.age, in: 0...120)
+        }
+    }
+}
+```
+
+Mapping table:
+
+| Legacy (iOS 13-16)            | iOS 17 (Observation)               |
+| ----------------------------- | ---------------------------------- |
+| `class X: ObservableObject`   | `@Observable final class X`        |
+| `@Published var n`            | plain `var n` (auto-tracked)       |
+| owner: `@StateObject var x`   | owner: `@State var x`              |
+| receiver r/o: `@ObservedObject` | receiver r/o: plain `let`         |
+| receiver r/w: `@ObservedObject` | receiver r/w: `@Bindable var x`   |
+
+Why migrate: `@Observable` tracks property reads at the *property* level, not the whole-object level — fewer redundant re-renders. The mental model is also simpler (no `@Published` ceremony).
+</details>
+
+### B13. iOS 17 — Share one model across siblings
+
+```swift
+@Observable
+final class Counter { var n = 0 }
+
+struct ChildA: View {
+    @State private var counter = Counter()      // own VM
+    var body: some View { Button("A: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ChildB: View {
+    @State private var counter = Counter()      // own VM
+    var body: some View { Button("B: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ParentView: View {
+    var body: some View {
+        VStack { ChildA(); ChildB() }
+    }
+}
+```
+
+The two children should share one counter, but they don't. Fix.
+
+<details><summary>Improved code & reasons</summary>
+
+```swift
+@Observable
+final class Counter { var n = 0 }
+
+struct ChildA: View {
+    @Bindable var counter: Counter
+    var body: some View { Button("A: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ChildB: View {
+    @Bindable var counter: Counter
+    var body: some View { Button("B: \(counter.n)") { counter.n += 1 } }
+}
+
+struct ParentView: View {
+    @State private var counter = Counter()
+    var body: some View {
+        VStack {
+            ChildA(counter: counter)
+            ChildB(counter: counter)
+        }
+    }
+}
+```
+
+Three issues fixed:
+
+1. **Each child owned its own VM** — `@State private var counter = Counter()` in each child created two separate instances. Siblings cannot share state if they don't share a model.
+2. **Ownership belonged in the parent** — to share state across siblings, the common ancestor must own it.
+3. **Wrong wrapper on the receivers** — the children read AND write to the counter, so they need `@Bindable` (not `@State`, which would re-create the model, and not `@ObservedObject`, which is for legacy `ObservableObject`).
+
+Both children now reference the same `Counter` instance held by the parent. Incrementing in either updates both labels. Mock 4 written B3 anchor pattern.
+</details>
+
 ## Section C — Practical Mini-Tasks (5 tasks)
 
 ### C1. Counter view: complete `@State` and `+` button
@@ -848,84 +983,106 @@ Notes: `ForEach($items)` requires `Todo: Identifiable` and yields a `Binding<Tod
 > **React:** no `$items` shortcut. You'd map with index and write `onChange={updated => setItems(prev => prev.map((it, j) => j === i ? updated : it))}` per row. SwiftUI collapses that whole boilerplate into one destructured `$todo`.
 </details>
 
-## Section D — View Decomposition
+### C6. `.sheet` + `@Environment(\.dismiss)` + `@FocusState`
 
-### D1. Settings screen for a workout app
-
-```
-+------------------------------------------------+
-| Settings                                       |
-+------------------------------------------------+
-|                                                |
-|  Notifications                                 |
-| +--------------------------------------------+ |
-| | Enable Notifications              [  ON ]  | |
-| +--------------------------------------------+ |
-|                                                |
-|  Workout                                       |
-| +--------------------------------------------+ |
-| | Daily Goal   [=====O--------]      30 min  | |
-| +--------------------------------------------+ |
-| | Rest Days                          [- 2 +] | |
-| +--------------------------------------------+ |
-|                                                |
-| +--------------------------------------------+ |
-| |              Reset Defaults                | |
-| |                  (red)                     | |
-| +--------------------------------------------+ |
-|                                                |
-+------------------------------------------------+
-```
-
-Your task: write a `struct SettingsView: View` that reproduces this layout using only `VStack`, `HStack`, `Form`, `Section`, `Text`, `Toggle`, `Slider`, `Stepper`, and `Button`. Declare the necessary `@State` properties for the toggle (Bool), daily-goal slider (Double minutes, range 0...120), rest-days stepper (Int, range 0...7), and a no-op `resetDefaults()` action. The slider row must show "Daily Goal" on the left, the slider in the middle, and `"\(Int(goal)) min"` on the right. The reset button text must be red.
-
-<details><summary>Reference solution</summary>
-
+Starter:
 ```swift
-struct SettingsView: View {
-    @State private var notifications = true
-    @State private var dailyGoal: Double = 30
-    @State private var restDays: Int = 2
+struct AddItemView: View {
+    @State private var name = ""
+    // TODO: focus state for the text field
+    // TODO: dismiss environment
+    var onSave: (String) -> Void
 
     var body: some View {
-        Form {
-            Section("Notifications") {
-                Toggle("Enable Notifications", isOn: $notifications)
-            }
-
-            Section("Workout") {
-                HStack {
-                    Text("Daily Goal")
-                    Slider(value: $dailyGoal, in: 0...120)
-                    Text("\(Int(dailyGoal)) min")
-                        .monospacedDigit()
-                }
-                Stepper(value: $restDays, in: 0...7) {
-                    Text("Rest Days")
-                }
-            }
-
-            Section {
-                Button(action: resetDefaults) {
-                    Text("Reset Defaults")
-                        .frame(maxWidth: .infinity)
-                        .foregroundStyle(.red)
-                }
-            }
-        }
-        .navigationTitle("Settings")
+        // TODO: VStack with TextField (auto-focused on appear),
+        //       Save button (disabled when name is empty),
+        //       Cancel button (dismisses).
+        EmptyView()
     }
+}
 
-    private func resetDefaults() {
-        notifications = true
-        dailyGoal = 30
-        restDays = 2
+struct ItemsView: View {
+    @State private var items: [String] = []
+    @State private var showingAdd = false
+
+    var body: some View {
+        // TODO: NavigationStack with a "+" toolbar button that
+        //       presents AddItemView in a sheet.
+        EmptyView()
     }
 }
 ```
 
-Notes: `Form` provides the grouped iOS-settings chrome for free; each `Section` becomes a card. `Stepper(value:in:)` already lays out label + `- value +` controls horizontally, so no extra `HStack` is needed. `.frame(maxWidth: .infinity)` on the button label centers the text across the row. The slider row uses an explicit `HStack` because we want a custom right-side label (`"\(Int(dailyGoal)) min"`).
+Your task: complete both views so tapping "+" presents a modal sheet, the field auto-focuses, Save appends to `items` and dismisses, Cancel dismisses without saving.
 
-> **React:** `Form`/`Section` ≈ a styled `<fieldset>` + `<legend>` group. `@State` properties play the same role as three `useState` hooks; the `$` prefix collapses each `[value, setValue]` pair into a single binding argument.
+<details><summary>Reference solution</summary>
+
+```swift
+struct AddItemView: View {
+    @State private var name = ""
+    @FocusState private var focused: Bool
+    @Environment(\.dismiss) private var dismiss
+    var onSave: (String) -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading) {
+                TextField("Name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focused)
+                    .onAppear { focused = true }
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("New Item")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        onSave(name)
+                        dismiss()
+                    }
+                    .disabled(name.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+struct ItemsView: View {
+    @State private var items: [String] = []
+    @State private var showingAdd = false
+
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.self) { Text($0) }
+                .navigationTitle("Items")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showingAdd = true } label: {
+                            Image(systemName: "plus")
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingAdd) {
+                    AddItemView { name in
+                        items.append(name)
+                    }
+                }
+        }
+    }
+}
+```
+
+Key points:
+
+- `@Environment(\.dismiss)` gives the sheet a way to close itself, regardless of who presented it.
+- `@FocusState` + `.focused($focused)` + `.onAppear { focused = true }` is the canonical auto-focus pattern. The keyboard slides up the moment the sheet appears.
+- The parent passes `onSave` as a closure rather than a binding — the child does not need to know how the parent stores the data.
+- Disabling Save when `name.isEmpty` is the equivalent of validation in the closed-book setting; mocks frequently grade this.
+
+Mirror of Mock 1 / Mock 4 / Mock 5 practical Add-flow tasks.
 </details>
 

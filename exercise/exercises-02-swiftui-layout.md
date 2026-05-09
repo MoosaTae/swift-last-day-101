@@ -455,6 +455,22 @@ VStack(spacing: 8) {
 .cornerRadius(16)
 ```
 
+**Mock-2-onwards variant** (when the allowed-modifier list explicitly includes `.clipShape` and `.foregroundStyle`):
+
+```swift
+Image("avatar")
+    .resizable()
+    .scaledToFill()
+    .frame(width: 100, height: 100)
+    .clipShape(Circle())              // crisper than .cornerRadius(half)
+
+Text("Jane Doe").font(.title2).bold()
+Text("jane@mail.com")
+    .font(.subheadline)
+    .foregroundStyle(.secondary)      // newer hierarchical-style API
+```
+
+`.clipShape(Circle())` works on any size (no need to compute half-of-side). `.foregroundStyle(.secondary)` is the iOS 15+ replacement for `.foregroundColor(.gray)` and is what mock answer keys use.
 </details>
 
 ### C2. Settings row — icon + label + chevron
@@ -673,6 +689,19 @@ HStack(spacing: 12) {
 .padding(.vertical, 8)
 ```
 
+**Mock-2-onwards variant** (when `.clipShape` and `.foregroundStyle` are allowed):
+
+```swift
+Image("avatar")
+    .resizable()
+    .scaledToFill()
+    .frame(width: 48, height: 48)
+    .clipShape(Circle())              // crisper than .cornerRadius(half)
+
+Text("Sent you a message")
+    .font(.subheadline)
+    .foregroundStyle(.secondary)      // hierarchical-style API
+```
 </details>
 
 ### C7. Header bar — back button (left), title (center), action icon (right)
@@ -779,6 +808,147 @@ VStack(alignment: .leading, spacing: 12) {
 .cornerRadius(16)
 ```
 
+</details>
+
+### C9. Composite profile screen — avatar + name/subtitle + 3-stat row
+
+```
++----------------------------------+
+|                                  |
+|             ( O )                |
+|                                  |
+|           Jane Doe               |
+|           @janedoe               |
+|                                  |
+|    128       58        7         |
+|   Posts   Followers  Following   |
++----------------------------------+
+```
+
+Allowed modifiers: `VStack`, `HStack`, `Text`, `Image`, `Spacer`, `.frame`, `.padding`, `.font`, `.bold`, `spacing`, `alignment`, `.resizable`, `.scaledToFill`, `.clipShape`, `.foregroundStyle`.
+
+<details><summary>Reference solution</summary>
+
+```swift
+VStack(spacing: 12) {
+    Image("avatar")
+        .resizable()
+        .scaledToFill()
+        .frame(width: 96, height: 96)
+        .clipShape(Circle())
+
+    VStack(spacing: 2) {
+        Text("Jane Doe").font(.title2).bold()
+        Text("@janedoe").foregroundStyle(.secondary)
+    }
+
+    HStack(spacing: 0) {
+        VStack {
+            Text("128").font(.title3).bold()
+            Text("Posts").font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+
+        VStack {
+            Text("58").font(.title3).bold()
+            Text("Followers").font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+
+        VStack {
+            Text("7").font(.title3).bold()
+            Text("Following").font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    .padding(.top, 8)
+}
+.padding()
+```
+
+Decomposition: outer `VStack` stacks (avatar) + (name VStack) + (stat row HStack). Each stat column uses `.frame(maxWidth: .infinity)` so three columns split the row evenly.
+</details>
+
+### C10. 4-row aligned settings list — fixed-width icon column
+
+```
++----------------------------------------+
+| [person]    Profile               >    |
+| [bell]      Notifications         >    |
+| [lock]      Privacy               >    |
+| [?]         Help                  >    |
++----------------------------------------+
+```
+
+All four icons must align in a fixed leading column even though SF Symbol widths differ. Allowed modifiers: `VStack`, `HStack`, `Text`, `Image`, `Spacer`, `.frame`, `.padding`, `.font`, `.foregroundStyle`, `spacing`.
+
+<details><summary>Reference solution</summary>
+
+```swift
+VStack(spacing: 16) {
+    HStack {
+        Image(systemName: "person").frame(width: 28)
+        Text("Profile")
+        Spacer()
+        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+    }
+    HStack {
+        Image(systemName: "bell").frame(width: 28)
+        Text("Notifications")
+        Spacer()
+        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+    }
+    HStack {
+        Image(systemName: "lock").frame(width: 28)
+        Text("Privacy")
+        Spacer()
+        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+    }
+    HStack {
+        Image(systemName: "questionmark.circle").frame(width: 28)
+        Text("Help")
+        Spacer()
+        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+    }
+}
+.padding()
+```
+
+Key trick: `.frame(width: 28)` on every leading `Image` forces a uniform icon column. Without it, `lock` (narrow) and `bell` (wide) would shift the labels left/right by a few points across rows.
+</details>
+
+### C11. Title-leading + meta-trailing rows
+
+```
++----------------------------------------+
+| Inception                       2010   |
+| Math Course                     3.0    |
++----------------------------------------+
+```
+
+Two stacked rows. Each row: bold title on the left, value on the right, separated by a `Spacer`.
+
+Allowed modifiers: `VStack`, `HStack`, `Text`, `Spacer`, `.bold`, `.font`, `.foregroundStyle`, `spacing`, `alignment`.
+
+<details><summary>Reference solution</summary>
+
+```swift
+VStack(alignment: .leading, spacing: 8) {
+    HStack {
+        Text("Inception").bold()
+        Spacer()
+        Text("2010").foregroundStyle(.secondary)
+    }
+    HStack {
+        Text("Math Course").bold()
+        Spacer()
+        Text("3.0").foregroundStyle(.secondary)
+    }
+}
+.padding()
+```
+
+Each row is its own `HStack` with a `Spacer` in the middle — the bold title stays leading and the meta value stays trailing regardless of string length. This pattern recurs across mock-papers (Mock 1 Q2 grade row, Mock 3 Q2 movie row).
 </details>
 
 ---

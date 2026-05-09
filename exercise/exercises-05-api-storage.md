@@ -201,6 +201,39 @@ Why: `[Post].self` decodes a JSON array; the resulting Swift array's count equal
 > **React/JS:** `(JSON.parse(json) as Post[]).length === 3`.
 </details>
 
+### A9. HTTPURLResponse status-code guard
+
+```swift
+func loadJSON() async throws -> Data {
+    guard let url = URL(string: "https://api.example.com/items") else {
+        throw URLError(.badURL)
+    }
+    let (data, response) = try await URLSession.shared.data(from: url)
+    // What goes here before decoding?
+    return data
+}
+```
+
+Why is decoding without checking the status code unsafe, and what is the canonical guard?
+
+<details><summary>Answer</summary>
+
+If the server returns 4xx/5xx, `data` is often an HTML error page or a different JSON shape (e.g. `{"error": "..."}`) than the success type. Decoding that body throws an unhelpful "missing key" error and hides the real problem (auth, rate limit, server outage).
+
+```swift
+let (data, response) = try await URLSession.shared.data(from: url)
+guard let http = response as? HTTPURLResponse,
+      (200..<300).contains(http.statusCode) else {
+    throw URLError(.badServerResponse)
+}
+return data
+```
+
+`(200..<300)` covers all "OK" responses. Cast `response` to `HTTPURLResponse` to access `statusCode`. Throwing `URLError(.badServerResponse)` (or a custom error) lets the caller distinguish network-fail from decode-fail.
+
+> **React/JS:** `if (!res.ok) throw new Error(res.statusText)` is the same idea — `fetch` does not auto-throw on 4xx/5xx, you must check.
+</details>
+
 ## Section B — Code Improvement
 
 ### B1. Force-unwrapped URL
@@ -513,6 +546,55 @@ Reasons: `onAppear`'s closure is synchronous, so `await` is a compile error. `.t
 > **React:** `.onAppear` ≈ `useEffect(() => { load() }, [])` (no cleanup). `.task` ≈ `useEffect(() => { const c = new AbortController(); load(c.signal); return () => c.abort(); }, [])` — the cancellation is built in. Always prefer `.task` for fetches.
 </details>
 
+### B11. Date decoding — snake_case + Unix epoch
+
+Bad:
+```swift
+struct Post: Codable {
+    let displayName: String
+    let createdAt: Date
+}
+
+func decode(_ data: Data) throws -> [Post] {
+    try JSONDecoder().decode([Post].self, from: data)
+}
+
+// Server sends:
+// [{ "display_name": "Tae", "created_at": 1715225400 }]
+```
+
+Decoding always nils. Why, and how do you fix it?
+
+<details><summary>Improved code & reasons</summary>
+
+Two independent issues:
+
+1. **Key mismatch** — server uses `display_name` and `created_at` but the struct uses camelCase. Vanilla `JSONDecoder` does not bridge these.
+2. **Date strategy missing** — server sends Unix epoch seconds (a number). The default `dateDecodingStrategy` expects `Date.timeIntervalSinceReferenceDate` (a different epoch base), so decode throws a type-mismatch.
+
+```swift
+struct Post: Codable {
+    let displayName: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
+        case createdAt   = "created_at"
+    }
+}
+
+func decode(_ data: Data) throws -> [Post] {
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .secondsSince1970
+    return try decoder.decode([Post].self, from: data)
+}
+```
+
+Alternative for keys: `decoder.keyDecodingStrategy = .convertFromSnakeCase` (works when *every* key is snake_case). Use `CodingKeys` when only some keys differ.
+
+Mock 5 B2 anchor pattern.
+</details>
+
 ## Section C — Practical Mini-Tasks
 
 ### C1. Fetch posts and list titles
@@ -822,4 +904,165 @@ struct FavoritesListView: View {
 `@AppStorage` natively supports `Data`, so we serialize the `Set<Int>` to JSON `Data` on every write and decode it on every read. Tapping a row mutates a local copy of the set and re-encodes it; SwiftUI re-renders because `favoritesData` changed.
 
 > **React:** equivalent to `localStorage.setItem("favs", JSON.stringify([...favs]))` on toggle and `JSON.parse(localStorage.getItem("favs") ?? "[]")` on read. `@AppStorage` only natively supports primitives — for collections you serialize to `Data`/JSON, exactly like localStorage.
+</details>
+
+### C6. Persisted favorites in an @Observable store (practical-exam shape)
+
+`@AppStorage` works inside SwiftUI views but does NOT compose with `@Observable` classes. Every practical-exam mock uses a class-based store: parent owns `@State private var favorites = FavoritesStore()` and rows toggle membership through it. Implement that store.
+
+Starter:
+```swift
+import Observation
+import Foundation
+
+@Observable
+final class FavoritesStore {
+    var ids: Set<String> = []
+    private let key = "favorite-ids"
+
+    init() {
+        // TODO: load from UserDefaults
+    }
+
+    func toggle(_ id: String) {
+        // TODO: insert or remove, then save
+    }
+
+    private func save() {
+        // TODO: encode ids as JSON Data and write to UserDefaults
+    }
+
+    private func load() {
+        // TODO: read Data from UserDefaults and decode into ids
+    }
+}
+```
+
+Your task: complete `init`, `toggle`, `save`, `load`. Then write a parent View that holds the store with `@State` and a row that toggles via tap.
+
+<details><summary>Reference solution</summary>
+
+```swift
+import Observation
+import Foundation
+import SwiftUI
+
+@Observable
+final class FavoritesStore {
+    var ids: Set<String> = []
+    private let key = "favorite-ids"
+
+    init() {
+        load()
+    }
+
+    func toggle(_ id: String) {
+        if ids.contains(id) {
+            ids.remove(id)
+        } else {
+            ids.insert(id)
+        }
+        save()
+    }
+
+    func contains(_ id: String) -> Bool {
+        ids.contains(id)
+    }
+
+    private func save() {
+        guard let data = try? JSONEncoder().encode(ids) else { return }
+        UserDefaults.standard.set(data, forKey: key)
+    }
+
+    private func load() {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) else {
+            return
+        }
+        ids = decoded
+    }
+}
+
+struct PostListView: View {
+    @State private var favorites = FavoritesStore()
+    let posts: [Post]
+
+    var body: some View {
+        List(posts) { post in
+            HStack {
+                Text(post.title)
+                Spacer()
+                if favorites.contains(post.id) {
+                    Text("*").bold()
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { favorites.toggle(post.id) }
+        }
+    }
+}
+
+struct Post: Codable, Identifiable {
+    let id: String
+    let title: String
+}
+```
+
+Key points:
+- The store is a **class** marked `@Observable`. Parent owns it with `@State` (which guarantees one instance per view identity that survives re-renders).
+- `init { load() }` hydrates from UserDefaults on creation. `save()` is called after every mutation in `toggle`.
+- `Set<String>` is `Codable`, so JSON round-trip via `Data` works directly. UserDefaults supports `Data` natively.
+- A child row that needs to mutate the store would receive it as `@Bindable var favorites: FavoritesStore` (or plain `let` if read-only).
+
+Mock 1 BookmarkStore / Mock 4 HabitStore anchor pattern.
+</details>
+
+### C7. Nested Codable + computed Identifiable id
+
+API response:
+```json
+{
+  "name": { "common": "Thailand", "official": "Kingdom of Thailand" },
+  "cca2": "TH",
+  "population": 70000000
+}
+```
+
+Your task: write a `Country` model that decodes this shape, conforms to `Identifiable` and `Hashable`, and uses `cca2` as the identity field (NOT a UUID).
+
+<details><summary>Reference solution</summary>
+
+```swift
+struct Country: Codable, Identifiable, Hashable {
+    let name: NameBlock
+    let cca2: String
+    let population: Int
+
+    var id: String { cca2 }
+
+    struct NameBlock: Codable, Hashable {
+        let common: String
+        let official: String
+    }
+}
+```
+
+Key points:
+- **Nested `NameBlock`** mirrors the JSON's nested object. Codable synthesizes the nested decoder automatically as long as the inner type also conforms to `Codable`.
+- **`var id: String { cca2 }`** is a computed property. It satisfies `Identifiable` without adding a new field to the JSON shape, and stays stable across decodes (every fresh JSON parse yields the same `id` for `"TH"`). Using `let id = UUID()` would break: each decode would produce a new UUID, so `Set<Country>` deduplication and List diffing would misbehave.
+- **`Hashable`** is required to use `Country` as a `NavigationLink(value:)` value or as an element in a `Set`. Synthesized automatically because every stored property is `Hashable`.
+
+Usage:
+```swift
+NavigationStack {
+    List(countries) { c in
+        NavigationLink(value: c) { Text(c.name.common) }
+    }
+    .navigationDestination(for: Country.self) { c in
+        Text("\(c.name.official) — pop \(c.population)")
+    }
+}
+```
+
+Mock 1 / Mock 4 practical Task 2 anchor pattern.
 </details>

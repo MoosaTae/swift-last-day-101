@@ -131,28 +131,6 @@ Why: odds `[1,3,5]` -> squares `[1,9,25]` -> sum `35`.
 > **React/JS:** identical: `nums.filter(n => n%2 === 1).map(n => n*n).reduce((a,b) => a+b, 0)`. `$0` is Swift shorthand for the first argument.
 </details>
 
-### Q7
-
-```swift
-func greet(_ name: String, from sender: String = "Tae") -> String {
-    "Hi \(name) from \(sender)"
-}
-print(greet("Ann"))
-print(greet("Ben", from: "Cat"))
-```
-
-<details><summary>Answer</summary>
-
-```
-Hi Ann from Tae
-Hi Ben from Cat
-```
-
-Why: omitted argument falls back to the default value; supplied argument overrides it.
-
-> **React/JS:** same as `function greet(name, sender = "Tae")`. The `_` (no external label) and `from sender:` (different external/internal name) are Swift-only ergonomics.
-</details>
-
 ### Q8
 
 ```swift
@@ -215,31 +193,6 @@ bad
 Why: `Int("12a")` returns `nil`, so the `else` branch runs — no crash because there is no force-unwrap.
 
 > **React/JS:** `parseInt("12a")` actually returns `12` (parses prefix); `Number("12a")` returns `NaN`. The `if let` is the safe-unwrap pattern; closest JS analog is `const n = Number(raw); if (!Number.isNaN(n)) { ... } else { ... }`.
-</details>
-
-### Q11
-
-```swift
-let score = 80
-let grade: String
-switch score {
-case 0..<50: grade = "F"
-case 50..<80: grade = "C"
-case 80...100: grade = "A"
-default: grade = "?"
-}
-print(grade)
-```
-
-<details><summary>Answer</summary>
-
-```
-A
-```
-
-Why: `50..<80` excludes 80, but `80...100` includes it, so the third case matches.
-
-> **React/JS:** JS `switch` doesn't support range patterns — you'd write an `if/else if` chain. `..<` is half-open (excludes upper); `...` is closed (includes both).
 </details>
 
 ### Q12
@@ -323,6 +276,109 @@ print(c.n)
 Why: closures capture reference types by reference, so each call mutates the same `Counter` instance.
 
 > **React/JS:** same — closures over class instances mutate the shared object. This is also why `useRef` works: the `.current` value is shared across renders.
+</details>
+
+### Q16
+
+```swift
+let raw = ["1", "two", "3", "four", "5"]
+let parsed = raw.compactMap { Int($0) }
+let mapped = raw.map { Int($0) }
+print(parsed)
+print(mapped)
+```
+
+<details><summary>Answer</summary>
+
+```
+[1, 3, 5]
+[Optional(1), nil, Optional(3), nil, Optional(5)]
+```
+
+Why: `compactMap` drops `nil` results AND unwraps the surviving optionals, giving plain `[Int]`. Plain `map` keeps the `Int?` shape, so each element prints with its `Optional(...)` wrapper or `nil`.
+
+> **React/JS:** `raw.map(Number).filter(n => !Number.isNaN(n))` is the closest. JS has no built-in compactMap; Lodash has `_.compact`.
+</details>
+
+### Q17
+
+```swift
+let words = ["apple", "ant", "bear", "banana", "cat", "carrot"]
+
+let grouped = Dictionary(grouping: words, by: { $0.first! })
+let counts = grouped.mapValues { $0.count }
+
+for (k, v) in counts.sorted(by: { $0.key < $1.key }) {
+    print("\(k):\(v)")
+}
+```
+
+<details><summary>Answer</summary>
+
+```
+a:2
+b:2
+c:2
+```
+
+Why: `Dictionary(grouping:by:)` partitions the array by the closure's key — here, the first character. `mapValues { $0.count }` collapses each bucket into its size. The sort orders the keys before printing.
+
+> **React/JS:** equivalent to `Object.groupBy(words, w => w[0])` (ES2024) followed by mapping to lengths. Pre-2024 JS used `reduce` with an accumulator object.
+</details>
+
+### Q18
+
+```swift
+func makeCounter() -> () -> Int {
+    var n = 0
+    return {
+        n += 1
+        return n
+    }
+}
+
+let c = makeCounter()
+let d = makeCounter()
+print(c(), c(), c())
+print(d(), c())
+```
+
+<details><summary>Answer</summary>
+
+```
+1 2 3
+1 4
+```
+
+Why: each call to `makeCounter()` produces a fresh closure that owns its own captured `var n`. `c` and `d` therefore have independent state — `d` starts again at `1` while `c` keeps incrementing past where it left off.
+
+> **React/JS:** classic JS closure factory: `function makeCounter() { let n = 0; return () => ++n; }`. Identical mechanic.
+</details>
+
+### Q19
+
+```swift
+let scores: [String: Int] = ["A": 80, "B": 45, "C": 70, "D": 30, "E": 90]
+
+let top = scores
+    .filter { $0.value >= 50 }
+    .sorted { $0.value > $1.value }
+    .prefix(3)
+    .map { "\($0.key)=\($0.value)" }
+    .joined(separator: ", ")
+
+print(top)
+print("Z=\(scores["Z"] ?? -1)")
+```
+
+<details><summary>Answer</summary>
+
+```
+E=90, A=80, C=70
+Z=-1
+```
+
+Why: filter keeps `A:80`, `C:70`, `E:90`. Sort descending by value gives `E:90, A:80, C:70`. `prefix(3)` keeps all three. `map` formats each entry, `joined` interleaves `, `. The missing key `"Z"` returns `nil`, so `??` falls back to `-1`. This is the canonical mock-anchor pattern (Mock 1 Q4, Mock 5 Q4).
 </details>
 
 ---
@@ -596,30 +652,59 @@ struct TodoItem: Identifiable {
 > **React:** echoes React's "always replace, never mutate state" rule. Mutating an item in place + `setItems(items)` won't re-render because reference is unchanged — same trap.
 </details>
 
-### B10 — Implicit type inference vs explicit annotation clarity
+### B10 — `inout` parameter and `var p = p` shadowing
 
 ```swift
-// Bad code
-let total = []                  // inferred as [Any]
-let price = 0                   // inferred as Int, but used as money
-let rate = 1                    // intended as a percentage Double
-let net = Double(price) * rate  // type-juggling fights the reader
+// Bad code (caller expects mutation, gets none)
+struct Point { var x = 0, y = 0 }
+
+func shiftRight(_ p: Point, by dx: Int) {
+    p.x += dx          // does not compile
+}
+
+var origin = Point()
+shiftRight(origin, by: 10)
+print(origin.x)        // expecting 10, gets 0
 ```
 
 <details><summary>Improved code & reasons</summary>
 
+Two issues:
+
+1. **Cannot mutate a `let` parameter on a value type.** Function parameters are immutable by default, and `Point` is a struct.
+2. **Even if we shadow with `var p = p`, the caller does not see the change** — the function would mutate a local copy.
+
+There are two correct fixes depending on intent:
+
+**Variant 1 — `inout` (mutate caller's struct in place):**
 ```swift
-let total: [Order] = []
-let price: Double = 0
-let rate: Double = 1.0   // 100%
-let net = price * rate
+func shiftRight(_ p: inout Point, by dx: Int) {
+    p.x += dx
+}
+
+var origin = Point()
+shiftRight(&origin, by: 10)
+print(origin.x)        // 10
 ```
 
-- Empty literals (`[]`, `[:]`) need an explicit element type or you get unhelpful inferences like `[Any]`.
-- Currency and rates should be `Double` (or a dedicated type) — leaving them as `Int` invites silent truncation.
-- Explicit annotations document intent and prevent surprising conversions later in the function.
+The `&` at the call site marks "pass me by reference."
 
-> **React/TS:** same pitfall — `const total = []` is inferred as `never[]`. Annotate: `const total: Order[] = []`.
+**Variant 2 — return a new struct (functional style, often preferred):**
+```swift
+func shifted(_ p: Point, by dx: Int) -> Point {
+    var copy = p          // local-mutation shadow
+    copy.x += dx
+    return copy
+}
+
+var origin = Point()
+origin = shifted(origin, by: 10)
+print(origin.x)        // 10
+```
+
+The `var copy = p` shadow is what allows the local mutation; you return the modified copy and the caller reassigns. This is the same pattern Swift's standard library uses (`array.sorted()` returns a new array).
+
+Why both forms exist: `inout` is concise but couples the function to in-place mutation; returning a new value composes better and is friendlier to concurrency. Mock-style trap: students often expect a struct passed by value to mutate the caller "because it looked like it did" inside the function.
 </details>
 
 ---
@@ -665,47 +750,7 @@ Notes:
 - Clamping with `min` prevents the grade from exceeding the valid range.
 </details>
 
-### C2 — Fix buggy `BankAccount` and explain why a class is appropriate
-
-```swift
-// Starter (buggy)
-struct BankAccount {
-    var balance: Double = 0
-    func deposit(_ amount: Double) {   // missing mutating
-        balance += amount
-    }
-}
-
-let acc = BankAccount()
-acc.deposit(100)
-print(acc.balance)
-```
-
-<details><summary>Reference solution</summary>
-
-```swift
-final class BankAccount {
-    var balance: Double = 0
-    func deposit(_ amount: Double) {
-        balance += amount
-    }
-}
-
-let acc = BankAccount()
-acc.deposit(100)
-print(acc.balance)   // 100
-```
-
-Why a class fits here:
-- A bank account has identity — two accounts with the same balance are not interchangeable.
-- Operations like deposits and withdrawals are expected to mutate a shared instance held by multiple parts of the app (UI, services).
-- Reference semantics avoid the trap of mutating a copy and losing the change.
-- Bonus: as a struct alternative, you would need `mutating` and to hold the value in `var`, but multiple consumers would each see a private copy.
-
-> **React/JS:** JS classes work exactly like Swift's `class` (reference semantics). `class BankAccount { balance = 0; deposit(n) { this.balance += n; } }` — no `mutating` keyword needed because JS objects are always mutable.
-</details>
-
-### C3 — Refactor a nested if-let pyramid into a single guard-let chain
+### C2 — Refactor a nested if-let pyramid into a single guard-let chain
 
 ```swift
 // Starter
@@ -785,61 +830,3 @@ Notes:
 > **React/TS:** with discriminated unions: `orders.reduce((acc, o) => { switch (o.kind) { case 'product': return acc + o.price * o.qty; ... } }, 0)`. Same shape, more verbose without enum associated values.
 </details>
 
-### C5 — Complete `WordCounter` returning the most-used word via Dictionary
-
-```swift
-// Starter
-struct WordCounter {
-    private(set) var counts: [String: Int] = [:]
-
-    mutating func add(_ sentence: String) {
-        // TODO: split on spaces, lowercase each token, increment its count
-    }
-
-    func mostUsed() -> String? {
-        // TODO: return the word with the highest count, or nil if empty.
-        // Tie-breaker is irrelevant.
-        return nil
-    }
-}
-
-// Expected:
-// var wc = WordCounter()
-// wc.add("Swift is great and Swift is fun")
-// print(wc.mostUsed() ?? "none")   // "swift"
-```
-
-<details><summary>Reference solution</summary>
-
-```swift
-struct WordCounter {
-    private(set) var counts: [String: Int] = [:]
-
-    mutating func add(_ sentence: String) {
-        let tokens = sentence
-            .lowercased()
-            .split(separator: " ")
-            .map(String.init)
-        for word in tokens {
-            counts[word, default: 0] += 1
-        }
-    }
-
-    func mostUsed() -> String? {
-        counts.max(by: { $0.value < $1.value })?.key
-    }
-}
-
-var wc = WordCounter()
-wc.add("Swift is great and Swift is fun")
-print(wc.mostUsed() ?? "none")   // swift
-```
-
-Notes:
-- `counts[word, default: 0] += 1` is the idiomatic counter pattern — no force unwrap, no manual `if` check.
-- `split(separator:)` returns `[Substring]`; mapping with `String.init` gives plain `String` keys.
-- `max(by:)` on a dictionary returns an optional `(key, value)` tuple; `?.key` extracts the word safely.
-- Returning `String?` lets callers use `??` to provide a fallback — far better than crashing on an empty input.
-
-> **React/JS:** counter idiom: `counts[word] = (counts[word] ?? 0) + 1`. `max(by:)` ≈ `Object.entries(counts).reduce((a,b) => b[1] > a[1] ? b : a)?.[0]`.
-</details>
