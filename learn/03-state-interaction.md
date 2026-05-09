@@ -57,17 +57,6 @@ The whole decision matrix below is essentially: "given who owns this state and w
 | Persist a small value across launches                         | `@AppStorage("key")` (see topic 05)  |
 | Track which TextField is focused                              | `@FocusState`                        |
 
-### Pre-iOS-17 wrappers (legacy, but still on slides)
-
-| Old wrapper              | iOS 17+ replacement                          |
-| ------------------------ | -------------------------------------------- |
-| `class M: ObservableObject` + `@Published var x` | `@Observable final class M { var x }` |
-| `@StateObject var m = M()`                       | `@State private var m = M()`          |
-| `@ObservedObject var m: M`                       | `@Bindable var m: M` (or plain `var m: M`) |
-| `@EnvironmentObject var m: M`                    | `@Environment(M.self) private var m`  |
-
-If a question hands you `ObservableObject`/`@Published`, treat it as the legacy form of the same idea.
-
 ---
 
 ## 2. `@State` — Local Value-Type State
@@ -229,18 +218,18 @@ struct Numpad: View {
 
 ---
 
-## 4. `@StateObject` vs `@ObservedObject` (legacy) -> `@State` vs plain `var` (iOS 17+)
+## 4. Owning a Reference-Type Model — `@State` on an `@Observable`
 
-> **Priority:** SKIP — legacy detail, `@Observable` covers it cleanly now.
+> **Priority:** DRILL — wrong wrapper here destroys data on every re-render.
 
 ### Why getting this wrong destroys data
 
-A view struct is recreated on every render. Its properties get re-initialized. If you write `@ObservedObject var store = Store()` (or in modern code, plain `var store = Store()`), then **every re-render builds a fresh `Store`** and your data vanishes the moment a parent re-renders.
+A view struct is recreated on every render. Its properties get re-initialized. If you write `var store = Store()` as a plain stored property, then **every re-render builds a fresh `Store`** and your data vanishes the moment a parent re-renders.
 
-`@StateObject` (legacy) and `@State` on an `@Observable` (modern) tell SwiftUI: "make this object exactly once, when the view first appears, and keep it across re-creations of the struct." That's lifecycle ownership.
+`@State` on an `@Observable` model tells SwiftUI: "make this object exactly once, when the view first appears, and keep it across re-creations of the struct." That's lifecycle ownership.
 
 ```text
-   WRONG  child has  let model = Store()       (plain stored property)
+   WRONG  child has  var model = Store()        (plain stored property)
    ──────────────────────────────────────────────────────────────────
             Render 0          Render 1            Render 2
             (first appear)    (parent re-renders) (parent re-renders)
@@ -249,7 +238,7 @@ A view struct is recreated on every render. Its properties get re-initialized. I
             user taps +3                          (no memory of taps)
             count=3 in #A     #A discarded        #B discarded
 
-   RIGHT  parent owns @State var store = Store()    (or @StateObject)
+   RIGHT  parent owns @State private var store = Store()
    ──────────────────────────────────────────────────────────────────
             Render 0          Render 1            Render 2
    store:   Store#A           Store#A  ✓ same     Store#A  ✓ same
@@ -261,10 +250,10 @@ A view struct is recreated on every render. Its properties get re-initialized. I
 
 ### Rule of thumb
 
-- The view that **creates** the model -> `@StateObject` (legacy) or `@State` (modern, `@Observable`).
-- A view that **receives** an already-created model from elsewhere -> `@ObservedObject` (legacy), `@Bindable` or plain `var` (modern).
+- The view that **creates** the model uses `@State private var store = Store()`.
+- A view that **receives** an already-created model takes a plain `var store: Store` (read-only) or `@Bindable var store: Store` (read-write, lets you write `$store.x`).
 
-### Modern (iOS 17+) example
+### Example
 
 ```swift
 @Observable
@@ -281,27 +270,9 @@ struct Child: View {
 }
 ```
 
-### Legacy form (slides may show this)
-
-```swift
-final class Store: ObservableObject {
-    @Published var count = 0
-}
-
-struct Owner: View {
-    @StateObject  private var store = Store()    // creator
-    var body: some View { Child(store: store) }
-}
-
-struct Child: View {
-    @ObservedObject var store: Store             // receiver
-    var body: some View { Text("\(store.count)") }
-}
-```
-
 ---
 
-## 5. `@EnvironmentObject` / `@Environment` — Skip the Prop Drill
+## 5. `@Environment` — Skip the Prop Drill
 
 > **Priority:** SKIM — environment values appear briefly, not deeply tested.
 
@@ -316,7 +287,7 @@ Use environment when:
 
 Stick to `@Binding` / direct passing when the value only crosses one or two view boundaries. Environment is the heavier hammer.
 
-### Modern form (iOS 17+, `@Observable`)
+### Inject an `@Observable` model by type
 
 ```swift
 @Observable final class AuthStore { var user: String? = nil }
@@ -338,17 +309,6 @@ struct DeepChild: View {
 }
 ```
 
-### Legacy form (`ObservableObject` + `@EnvironmentObject`)
-
-```swift
-final class AuthStore: ObservableObject {
-    @Published var user: String? = nil
-}
-
-// inject:  RootView().environmentObject(AuthStore())
-// consume: @EnvironmentObject var auth: AuthStore
-```
-
 ### `@Environment` (lowercase) for system values
 
 `@Environment` (without the "Object") reads built-in system values via key paths — color scheme, locale, dismiss action, scene phase, etc.
@@ -368,27 +328,17 @@ struct Sheet: View {
 
 ---
 
-## 6. `@Observable` Macro (iOS 17+) — Modern Replacement
+## 6. `@Observable` Macro (iOS 17+) — The Reference-Type Model
 
-> **Priority:** DRILL — modern replacement for ObservableObject, expected on practical.
+> **Priority:** DRILL — expected on the practical.
 
-### Why the macro exists
+### What the macro does
 
-Pre-iOS 17, you wrote `class Foo: ObservableObject { @Published var x = 0 }` and SwiftUI re-rendered any view that observed `Foo` whenever **any** `@Published` changed. That was coarse — a view reading only `foo.x` would re-render when `foo.y` changed.
-
-`@Observable` (powered by Swift's macro system + the `Observation` framework) does property-level dependency tracking automatically. You write a plain class with plain `var`s, and SwiftUI only re-renders views that actually read the specific property that changed.
+`@Observable` (powered by Swift's macro system + the `Observation` framework) does property-level dependency tracking automatically. You write a plain class with plain `var`s, and SwiftUI only re-renders the views that actually read the specific property that changed.
 
 ```text
    Store has: var x, var y         mutation: store.x += 1
 
-   LEGACY  ObservableObject + @Published
-   ┌─────────────────┬──────────────┬──────────────┐
-   │ View reads x    │ View reads y │ View reads -- │
-   ├─────────────────┼──────────────┼──────────────┤
-   │  RE-RENDER ✓    │ RE-RENDER ✓  │ RE-RENDER ✓  │   (any @Published fires all)
-   └─────────────────┴──────────────┴──────────────┘
-
-   MODERN  @Observable (Observation framework)
    ┌─────────────────┬──────────────┬──────────────┐
    │ View reads x    │ View reads y │ View reads -- │
    ├─────────────────┼──────────────┼──────────────┤
@@ -664,8 +614,8 @@ struct GameView: View {
 | `@Binding` in `#Preview` with no parent                       | Use `.constant(true)` to fabricate a binding for previews.                                  |
 | `@State` on a plain class (not `@Observable`)                 | Reference identity is preserved, but SwiftUI sees no property changes -> no re-render.      |
 | `Picker` tag type doesn't match selection type                | Silent: picker just won't update the selection; no compile error.                           |
-| Using `@ObservedObject` (or plain `var`) for object you create| The object is rebuilt on every render -> data loss. Use `@StateObject` / `@State`.          |
-| `@EnvironmentObject` / `@Environment(Type.self)` not injected | Runtime crash on first access. The compiler can't verify injection.                         |
+| Plain `var store = Store()` for an `@Observable` you create   | The object is rebuilt on every render -> data loss. Use `@State private var store = Store()`. |
+| `@Environment(Type.self)` not injected                         | Runtime crash on first access. The compiler can't verify injection.                         |
 
 ---
 
@@ -725,13 +675,6 @@ RootView().environment(store)
 @Environment(\.dismiss)     private var dismiss
 @Environment(\.colorScheme) private var scheme
 
-// --- Legacy (slides may use) ---
-final class M: ObservableObject { @Published var x = 0 }
-@StateObject    private var m = M()        // creator
-@ObservedObject var m: M                   // receiver
-@EnvironmentObject var m: M                // env receiver
-RootView().environmentObject(M())          // env injector
-
 // --- Widgets ---
 Button("Tap") { action() }
 Image(systemName: "x").onTapGesture { }
@@ -769,7 +712,7 @@ Button("Go") { }.disabled(!isValid)
 
 - Why does `@State` exist? Views are structs and can't mutate themselves; `@State` moves storage outside the struct so it survives re-creation.
 - Why `$x`? It is the projected value of the wrapper, a `Binding<T>` that points back at the wrapper's storage.
-- Why `@StateObject` / `@State` for the creator and `@ObservedObject` / plain `var` for the receiver? The creator-marker tells SwiftUI to instantiate once and persist; without it, every re-render builds a new model.
+- Why `@State` for the creator of an `@Observable` and a plain `var` (or `@Bindable`) for the receiver? The creator-marker tells SwiftUI to instantiate once and persist; without it, every re-render builds a new model.
 - Why `@Observable`? Property-level dependency tracking: only views that read the changed property re-render.
 - Why `.constant(_)` in previews? `@Binding` requires a real backing store; `.constant` fakes one.
 

@@ -31,8 +31,6 @@ Final exam prep — Class 3 (Interactions) + Class 10 (MVVM/Observation) + HW4-6
 
 ## 2. Property Wrappers
 
-### Modern (iOS 17+, Observation framework)
-
 | Wrapper        | Owns?      | Where                          | Use for                                 |
 |----------------|------------|--------------------------------|-----------------------------------------|
 | `@State`       | Yes (View) | inside View struct             | Local mutable value (and `@Observable` model owned by the View) |
@@ -60,15 +58,7 @@ Final exam prep — Class 3 (Interactions) + Class 10 (MVVM/Observation) + HW4-6
 @Environment(\.dismiss) ◄── system value (read-only)
 ```
 
-### Legacy (still works, exam may show either)
-
-| Wrapper             | Owns?      | Where                       | Use for                                                 |
-|---------------------|------------|-----------------------------|---------------------------------------------------------|
-| `@StateObject`      | Yes (View) | inside View **that creates** the model | Owns an `ObservableObject` lifecycle — created once even on re-render |
-| `@ObservedObject`   | No         | inside child View **that receives** | Subscribes to an existing `ObservableObject` passed in  |
-| `@EnvironmentObject`| No         | inside View                 | Pull `ObservableObject` injected via `.environmentObject(...)` |
-
-**Creator vs receiver rule (legacy):** the View that *creates* the model uses `@StateObject` (so it survives re-renders); any child that just *uses* the model uses `@ObservedObject` or `@EnvironmentObject`. Swap them and you either rebuild the model on every render (`@ObservedObject` on creator) or crash on missing env (wrong injection).
+**Creator vs receiver rule:** the View that *creates* an `@Observable` model uses `@State` (so the instance survives re-renders); any child that just *uses* the model takes a plain `let`/`var` (read-only) or `@Bindable var` (read-write). Put the wrapper on the wrong side and you either rebuild the model on every render or lose write-back.
 
 - `@State` should be `private`, always `var`, always initialized.
 - Pass binding with `$value`.
@@ -191,20 +181,13 @@ struct DraftField: View {
 
 MVVM: View -> ViewModel -> Model. Model = plain types; ViewModel = `@Observable class` with state + intents; View renders + calls intents.
 
-### `@Observable` vs legacy `ObservableObject` (both on the exam)
+The contract:
 
-Two equivalent stacks for "external reference-type model with auto re-render":
-
-| | Modern (iOS 17+) | Legacy (still works) |
-|---|---|---|
-| Model annotation | `@Observable final class VM { var x = 0 }` | `final class VM: ObservableObject { @Published var x = 0 }` |
-| Creator owns it via | `@State private var vm = VM()` | `@StateObject private var vm = VM()` |
-| Receiver (child) | `@Bindable var vm: VM` (or just `var vm: VM`) | `@ObservedObject var vm: VM` |
-| Injection | `.environment(vm)` + `@Environment(VM.self) var vm` | `.environmentObject(vm)` + `@EnvironmentObject var vm: VM` |
-| Re-render trigger | any `var` read in `body` | only `@Published` properties |
-| Main actor | not required (use `@MainActor` if you do `Task` work) | mark VM `@MainActor` if it mutates `@Published` from async |
-
-**Topic 05's `WeatherVM` uses the legacy stack** (`ObservableObject` + `@Published` + `@MainActor`). If the exam hands you legacy code, don't "fix" it to `@Observable` — answer in the same paradigm it came in.
+- Model: `@Observable final class VM { var x = 0 }`
+- Creator owns it via `@State private var vm = VM()`
+- Receiver (child) takes a plain `let`/`var` (read-only) or `@Bindable var vm: VM` (read-write).
+- Injection: `.environment(vm)` at the root + `@Environment(VM.self) private var vm` in descendants.
+- Re-render trigger: any `var` actually read inside `body` — property-level tracking.
 
 ## 8. `@State` vs `@Observable`
 
@@ -324,8 +307,6 @@ struct DeepChild: View {
 }
 ```
 
-Legacy form: `.environmentObject(model)` + `@EnvironmentObject var model: AppModel` — used with `ObservableObject`.
-
 **Pitfall:** missing `.environment(...)` injection at the root crashes the child at runtime ("No Observable object of type X found").
 
 ### `@FocusState` — control which TextField is focused
@@ -387,7 +368,7 @@ struct GameView: View {
 | Severity | Gotcha | What goes wrong |
 |---|---|---|
 | HIGH | Mutating `@State` inside `body` (no event) | Re-render schedules another mutation → infinite loop / runtime warning |
-| HIGH | Re-creating an `@Observable`/`@StateObject` from a `let` in a parent re-render | Owner isn't `@State` so model is rebuilt → all in-memory state lost |
+| HIGH | Re-creating an `@Observable` from a plain `let`/`var` in a parent re-render | Owner isn't `@State` so model is rebuilt → all in-memory state lost |
 | HIGH | Passing `value` instead of `$value` to a `@Binding` parameter | Type mismatch or no write-back; child edits don't reach parent |
 | HIGH | Reading `@Bindable` without first holding the model in a property | `$store.x` unavailable; TextField binding silently does nothing |
 | MED | Mutating `@State` from a closure that captures `self` (struct) by value | Write hits a copy, not the live storage; UI never updates |

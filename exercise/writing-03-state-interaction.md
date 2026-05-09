@@ -104,8 +104,8 @@ struct CartScreen: View {
 <details><summary>Solution</summary>
 
 Smells:
-- `CartModel` is a plain `class` with no `@Observable` (or `ObservableObject`),
-  so SwiftUI never re-renders when `items` mutates.
+- `CartModel` is a plain `class` with no `@Observable`, so SwiftUI never
+  re-renders when `items` mutates.
 - `var cart = CartModel()` is unwrapped -- the view does not own the lifetime,
   and nothing observes it. With `@Observable`, this should be `@State private
   var cart = CartModel()`.

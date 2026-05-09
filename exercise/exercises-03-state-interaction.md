@@ -130,48 +130,7 @@ The two-argument `onChange` closure receives the previous and new value each tim
 > **React:** like `useEffect(() => { ... }, [n])`, but the closure receives both `old` and `new` directly — no need for a `useRef` to remember the previous value.
 </details>
 
-### A10. `@StateObject` vs `@ObservedObject` re-creation
-
-```swift
-final class Counter: ObservableObject {
-    @Published var n = 0
-    init() { print("init Counter") }
-}
-
-struct Inner: View {
-    @StateObject var s = Counter()      // owns
-    @ObservedObject var o = Counter()   // recreated each init
-    var body: some View {
-        VStack {
-            Text("s=\(s.n) o=\(o.n)")
-            Button("inc") { s.n += 1; o.n += 1 }
-        }
-    }
-}
-
-struct Outer: View {
-    @State private var tick = 0
-    var body: some View {
-        VStack {
-            Inner()
-            Button("Re-render parent") { tick += 1 }
-        }
-    }
-}
-```
-
-The user taps "inc" twice (so both reach 2), then taps "Re-render parent" once. What does the `Text` inside `Inner` show?
-
-<details><summary>Answer</summary>
-
-`s=2 o=0`
-
-`@StateObject` is created once and tied to the view's identity, so `s.n` survives the parent re-render. `@ObservedObject` initialized inline is rebuilt every time `Inner` is reinitialized, so `o` is replaced by a fresh `Counter()` with `n = 0`. (You will also see two `init Counter` prints originally, then one more on the parent re-render.)
-
-> **React:** `@StateObject` ≈ `useState(() => new Counter())` (lazy init, persists across renders). `@ObservedObject var o = Counter()` ≈ `const o = new Counter()` written directly in the function body — rebuilt every render.
-</details>
-
-### A11. iOS 17 — `@Observable` + `@State` survives parent re-render
+### A11. `@Observable` + `@State` survives parent re-render
 
 ```swift
 import Observation
@@ -210,9 +169,9 @@ The user taps "inc" twice, then "Re-render parent" once. What does the `Text` in
 
 `n=2`. `init Counter` prints exactly **once**.
 
-Why: with the iOS 17 Observation framework, the owner uses `@State` (NOT `@StateObject` — that's the legacy `ObservableObject` form). `@State` ties the class instance to the view's identity, so the same `Counter` survives across re-renders triggered by the parent's `tick` change. Two increments still leave `counter.n == 2`.
+Why: `@State` ties the class instance to the view's identity, so the same `Counter` survives across re-renders triggered by the parent's `tick` change. Two increments still leave `counter.n == 2`.
 
-The contract is: **`@Observable` class + owner uses `@State` + receivers use `@Bindable`** (or plain `let` if read-only). This combination replaces the older `ObservableObject` + `@Published` + `@StateObject`/`@ObservedObject` stack.
+The contract: **`@Observable` class + owner uses `@State` + receivers use `@Bindable`** (or plain `let` if read-only).
 </details>
 
 ### A12. `@FocusState` auto-focus on appear
@@ -354,15 +313,16 @@ Reasons: `@State` makes the child own a private copy that the parent never sees,
 > **React:** the child wrote `useState(props.n)` (snapshot copy) instead of taking `[n, setN]` from props. The copy diverges from the parent forever.
 </details>
 
-### B5. Using `@ObservedObject` to create the object
+### B5. Plain `var` to create an `@Observable`
 
 ```swift
-final class Store: ObservableObject {
-    @Published var n = 0
-}
+import Observation
+
+@Observable
+final class Store { var n = 0 }
 
 struct V: View {
-    @ObservedObject var store = Store()
+    var store = Store()
     var body: some View {
         Button("\(store.n)") { store.n += 1 }
     }
@@ -372,24 +332,25 @@ struct V: View {
 <details><summary>Improved code & reasons</summary>
 
 ```swift
-final class Store: ObservableObject {
-    @Published var n = 0
-}
+import Observation
+
+@Observable
+final class Store { var n = 0 }
 
 struct V: View {
-    @StateObject private var store = Store()
+    @State private var store = Store()
     var body: some View {
         Button("\(store.n)") { store.n += 1 }
     }
 }
 ```
 
-Reasons: `@ObservedObject` does not own the lifetime of the object — its initializer expression runs every time the view struct is recreated, so a new `Store()` can replace the old one and lose state. `@StateObject` instantiates exactly once per view identity. (In iOS 17+ projects, prefer `@Observable` + `@State private var store = Store()`.)
+Reasons: a plain stored property does not own the instance's lifetime — its initializer runs every time the view struct is recreated, so a new `Store()` can replace the old one and lose state. `@State` ties creation to the view's identity, instantiating exactly once.
 
-> **React:** `useState(new Store())` runs `new Store()` every render but discards all but the first; the safe form is `useState(() => new Store())` (lazy init). `@StateObject` is exactly that lazy-init contract.
+> **React:** `useState(new Store())` runs `new Store()` every render but discards all but the first; the safe form is `useState(() => new Store())` (lazy init). `@State` on an `@Observable` is exactly that lazy-init contract.
 </details>
 
-### B6. Class with shared mutable state — should be `ObservableObject` with `@Published`
+### B6. Class with shared mutable state — should be `@Observable`
 
 ```swift
 final class Cart {
@@ -410,12 +371,15 @@ struct V: View {
 <details><summary>Improved code & reasons</summary>
 
 ```swift
-final class Cart: ObservableObject {
-    @Published var items: [String] = []
+import Observation
+
+@Observable
+final class Cart {
+    var items: [String] = []
 }
 
 struct V: View {
-    @StateObject private var cart = Cart()
+    @State private var cart = Cart()
     var body: some View {
         VStack {
             Text("Items: \(cart.items.count)")
@@ -425,7 +389,7 @@ struct V: View {
 }
 ```
 
-Reasons: a plain class held in an unwrapped property does not notify SwiftUI when its members change, so the `Text` never re-renders. Conform to `ObservableObject`, mark mutable members `@Published`, and own the instance with `@StateObject` (or use `@Observable` + `@State` on iOS 17+).
+Reasons: a plain class held in an unwrapped property does not notify SwiftUI when its members change, so the `Text` never re-renders. Annotate the class with `@Observable` (property-level dependency tracking) and own the instance with `@State` so the same `Cart` survives re-renders.
 
 > **React:** plain JS objects held in `useRef` don't trigger re-renders on mutation. You'd reach for Zustand, Context + reducer, or `useSyncExternalStore` to get reactive shared state.
 </details>
@@ -525,13 +489,16 @@ Reasons: `let` is immutable — `count += 1` is a compile error. The value also 
 ### B10. View recreating its data source every render
 
 ```swift
-final class Loader: ObservableObject {
-    @Published var rows: [String] = []
+import Observation
+
+@Observable
+final class Loader {
+    var rows: [String] = []
     init() { rows = (1...100).map { "Row \($0)" } }
 }
 
 struct V: View {
-    @ObservedObject var loader = Loader()   // recreated each init
+    var loader = Loader()   // recreated each init
     var body: some View {
         List(loader.rows, id: \.self) { Text($0) }
     }
@@ -541,25 +508,28 @@ struct V: View {
 <details><summary>Improved code & reasons</summary>
 
 ```swift
-final class Loader: ObservableObject {
-    @Published var rows: [String] = []
+import Observation
+
+@Observable
+final class Loader {
+    var rows: [String] = []
     init() { rows = (1...100).map { "Row \($0)" } }
 }
 
 struct V: View {
-    @StateObject private var loader = Loader()
+    @State private var loader = Loader()
     var body: some View {
         List(loader.rows, id: \.self) { Text($0) }
     }
 }
 ```
 
-Reasons: `@ObservedObject var loader = Loader()` re-runs `Loader()` every time the view struct is reinitialized, throwing away cached rows and causing redundant work. `@StateObject` ties creation to the view's identity so `Loader` is built exactly once.
+Reasons: `var loader = Loader()` re-runs `Loader()` every time the view struct is reinitialized, throwing away cached rows and causing redundant work. `@State` ties creation to the view's identity so `Loader` is built exactly once.
 
 > **React:** same lesson as B5: `useState(() => new Loader())` builds once; `useState(new Loader())` rebuilds and discards every render.
 </details>
 
-### B11. iOS 17 — `@ObservedObject` on an `@Observable` class
+### B11. Wrong wrapper for an `@Observable` receiver
 
 ```swift
 import Observation
@@ -570,7 +540,7 @@ final class HabitStore {
 }
 
 struct HabitListView: View {
-    @ObservedObject var store: HabitStore   // wrong wrapper for iOS 17
+    @State var store: HabitStore   // wrong: receiver, not owner
     var body: some View {
         List(store.habits, id: \.self) { Text($0) }
     }
@@ -605,71 +575,14 @@ struct HabitListView: View {
 
 Reasons:
 
-1. `@ObservedObject` is part of the legacy `ObservableObject`/`@Published` stack. It does not compose with `@Observable` — at best you get no observation tracking; at worst the compiler complains.
-2. The iOS-17 contract is: **owner uses `@State`, read-only receivers use a plain `let`, read-write receivers use `@Bindable var`.**
+1. `@State` on a child re-creates the model on every reinitialization — the parent's instance is discarded and the child works with its own copy that the parent can never see.
+2. The contract is: **owner uses `@State`, read-only receivers use a plain `let`, read-write receivers use `@Bindable var`.**
 3. If `HabitListView` needs to mutate the store (e.g. delete rows), declare `@Bindable var store: HabitStore` and bind via `$store.habits` where required.
 
 Mock 4 written B1 anchor pattern.
 </details>
 
-### B12. iOS 17 — Migrate `ObservableObject` to `@Observable`
-
-```swift
-final class ProfileVM: ObservableObject {
-    @Published var name: String = ""
-    @Published var age: Int = 0
-}
-
-struct ProfileEditView: View {
-    @StateObject var vm = ProfileVM()
-    var body: some View {
-        VStack {
-            TextField("Name", text: $vm.name)
-            Stepper("Age: \(vm.age)", value: $vm.age, in: 0...120)
-        }
-    }
-}
-```
-
-Migrate to the iOS-17 Observation stack and explain the mapping.
-
-<details><summary>Improved code & reasons</summary>
-
-```swift
-import Observation
-
-@Observable
-final class ProfileVM {
-    var name: String = ""
-    var age: Int = 0
-}
-
-struct ProfileEditView: View {
-    @State private var vm = ProfileVM()
-    var body: some View {
-        @Bindable var vm = vm    // optional in-body bindable
-        VStack {
-            TextField("Name", text: $vm.name)
-            Stepper("Age: \(vm.age)", value: $vm.age, in: 0...120)
-        }
-    }
-}
-```
-
-Mapping table:
-
-| Legacy (iOS 13-16)            | iOS 17 (Observation)               |
-| ----------------------------- | ---------------------------------- |
-| `class X: ObservableObject`   | `@Observable final class X`        |
-| `@Published var n`            | plain `var n` (auto-tracked)       |
-| owner: `@StateObject var x`   | owner: `@State var x`              |
-| receiver r/o: `@ObservedObject` | receiver r/o: plain `let`         |
-| receiver r/w: `@ObservedObject` | receiver r/w: `@Bindable var x`   |
-
-Why migrate: `@Observable` tracks property reads at the *property* level, not the whole-object level — fewer redundant re-renders. The mental model is also simpler (no `@Published` ceremony).
-</details>
-
-### B13. iOS 17 — Share one model across siblings
+### B13. Share one `@Observable` across siblings
 
 ```swift
 @Observable
@@ -725,7 +638,7 @@ Three issues fixed:
 
 1. **Each child owned its own VM** — `@State private var counter = Counter()` in each child created two separate instances. Siblings cannot share state if they don't share a model.
 2. **Ownership belonged in the parent** — to share state across siblings, the common ancestor must own it.
-3. **Wrong wrapper on the receivers** — the children read AND write to the counter, so they need `@Bindable` (not `@State`, which would re-create the model, and not `@ObservedObject`, which is for legacy `ObservableObject`).
+3. **Wrong wrapper on the receivers** — the children read AND write to the counter, so they need `@Bindable`. `@State` on a receiver would re-create the model on every re-init and detach it from the parent's instance.
 
 Both children now reference the same `Counter` instance held by the parent. Incrementing in either updates both labels. Mock 4 written B3 anchor pattern.
 </details>
@@ -770,14 +683,17 @@ struct CounterTask: View {
 > **React:** `const [count, setCount] = useState(0)` + `<button onClick={() => setCount(c => c + 1)}>+</button>`.
 </details>
 
-### C2. Login form bound to an `ObservableObject` view model
+### C2. Login form bound to an `@Observable` view model
 
 Starter:
 
 ```swift
-final class LoginVM: ObservableObject {
-    @Published var email = ""
-    @Published var password = ""
+import Observation
+
+@Observable
+final class LoginVM {
+    var email = ""
+    var password = ""
     var canSubmit: Bool { email.contains("@") && password.count >= 6 }
     func submit() { /* network */ }
 }
@@ -797,7 +713,7 @@ Your task: own the view model with the right wrapper, bind two text fields to it
 
 ```swift
 struct LoginView: View {
-    @StateObject private var vm = LoginVM()
+    @State private var vm = LoginVM()
 
     var body: some View {
         Form {
@@ -811,7 +727,7 @@ struct LoginView: View {
 }
 ```
 
-Notes: `@StateObject` ensures the VM is created once. `$vm.email` produces a `Binding<String>` from the `@Published` property. On iOS 17+ you would mark `LoginVM` `@Observable` and own it via `@State private var vm = LoginVM()`.
+Notes: `@State` on an `@Observable` instance ensures the VM is created exactly once and survives re-renders. `$vm.email` produces a `Binding<String>` straight from the property — `@Observable` makes that projection available without any extra wrapper on read-only fields.
 
 > **React:** typically a Zustand store or Context+reducer; the closest direct analog is `useState(() => new LoginVM())` plus per-field setters. `$vm.email` collapses `[vm.email, e => setVm({...vm, email: e})]` into one expression.
 </details>
