@@ -6,9 +6,13 @@ import CommandPalette from '../components/CommandPalette';
 interface Props {
   title: string;
   active?: string;
+  wide?: boolean;
 }
 
-const { title, active = '' } = Astro.props;
+const { title, active = '', wide = false } = Astro.props;
+const containerClass = wide
+  ? 'mx-auto max-w-5xl px-6 py-8'
+  : 'mx-auto max-w-3xl px-6 py-8';
 
 const knowledge = Object.entries(pages.knowledge ?? {}).sort(([a], [b]) => a.localeCompare(b));
 const learn = Object.entries(pages.learn ?? {}).sort(([a], [b]) => a.localeCompare(b));
@@ -87,7 +91,7 @@ const linkClass = (href: string) => {
       </aside>
 
       <main class="flex-1 min-w-0">
-        <div class="mx-auto max-w-3xl px-6 py-8">
+        <div class={containerClass}>
           <slot />
         </div>
       </main>

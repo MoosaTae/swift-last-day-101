@@ -13,7 +13,7 @@ const { slug } = Astro.params;
 const { page } = Astro.props;
 ---
 
-<Sidebar title={`${page.title} - Mock Exam`} active={`/mock/${slug}`}>
+<Sidebar title={`${page.title} - Mock Exam`} active={`/mock/${slug}`} wide={true}>
   <header class="mb-6">
     <h1 class="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">
       <span class="text-zinc-500 mr-2">{slug}</span>{page.title}
